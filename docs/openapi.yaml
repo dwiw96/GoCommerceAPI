@@ -1,0 +1,917 @@
+openapi: 3.0.3
+info:
+  title: vocagame technical testing backend
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/auth/signup:
+    post:
+      summary: Register new user
+      description: create new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  minLength: 2
+                  maxLength: 255
+                email:
+                  type: string
+                  maxLength: 255
+                password:
+                  type: string
+                  minLength: 7
+                  maxLength: 50
+              required:
+                - username
+                - email
+                - password
+            examples:
+              success:
+                description: Sign up user john doe
+                value:
+                  username: john doe
+                  email: doe@mail.com
+                  password: vocagame111
+      responses:
+        "201":
+          description: Success register new user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseWithoutTokens"
+              examples:
+                success:
+                  description: Success register new user
+                  value:
+                    description: Sign up success
+                    error_message: ''
+                    execute_at: 2024/09/22 19:45:05.469
+                    result: success
+                    value:
+                      username: John Doe
+                      email: doe@mail.com
+        "409":
+          description: Duplicate email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              examples:
+                duplicated email:
+                  description: email is registered
+                  value:
+                    description: 
+                    - this email address is already in use
+                    error_message: Conflict
+                    execute_at: 2024/11/05 16:29:11.639
+                    result: failure
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              examples:
+                validationerror:
+                  description: Validation error
+                  value:
+                    description:
+                    - username is a required field
+                    - Password must be at least 7 characters in length
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/11/04 14:29:01.336
+                    result: failure
+  /api/v1/auth/login:
+    post:
+      summary: Login User
+      description: Login user with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  maxLength: 255
+                password:
+                  type: string
+                  minLength: 7
+                  maxLength: 50
+              required:
+                - email
+                - password
+            examples:
+              success:
+                description: correct login parameter
+                value:
+                  email: doe@mail.com
+                  password: johndoe
+      responses:
+        '200':
+          description: Success login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseWithTokens"
+                success:
+                  description: Success login
+                  value:
+                    description: Login success
+                    error_message: ''
+                    execute_at: 2024/09/23 16:49:26.806
+                    result: success
+                    value:
+                      username: john doe
+                      email: doe@mail.com
+                      access_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              examples:
+                wrong password:
+                  description: wrong password
+                  value:
+                    description: 
+                    - password is wrong
+                    error_message: Unauthorized
+                    execute_at: 2024/09/22 19:44:11.778
+                    result: failure
+                wrong email:
+                  description: wrong email
+                  value:
+                    description: 
+                    - no user found with this email doee@mail.com
+                    error_message: Unauthorized
+                    execute_at: 2024/09/22 19:44:11.778
+                    result: failure
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              examples:
+                validationerror:
+                  description: Validation error
+                  value:
+                    description:
+                    - Email must be a valid email address
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/09/22 19:44:11.778
+                    result: failure
+  /api/v1/auth/logout:
+    post:
+      summary: Logout
+      description: Logout user with auth header
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+          format: bearer
+        description: Bearer refresh_token
+      responses:
+        '200':
+          description: success log out user
+          content:
+            text/plain:
+              schema:
+                type: boolean
+              examples:
+                success:
+                  value: logout success
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              examples:
+                blacklist token:
+                  value:
+                    description: 
+                    - token is blacklist
+                    error_message: Unauthorized
+                    execute_at: 2024/09/22 19:44:11.778
+                    result: failure
+                empty auth header:
+                  description: empty auth header
+                  value:
+                    description:
+                    - no authorization header found
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/09/22 19:44:11.778
+                    result: failure
+                expired access token:
+                  description: empty auth header
+                  value:
+                    description:
+                    - 'failed to parse token when verifying, err: token has invalid claims: token is expired'
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/09/22 19:44:11.778
+                    result: failure
+  /api/v1/auth/refresh_token:
+    post:
+      summary: Refresh token
+      description: renew refresh and access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                refresh_token:
+                  type: string
+              required:
+                - access_token
+                - refresh_token
+            example:
+              access_token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjJlMDcy...
+              refresh_token: 4c489afa-485f-43f3-b5bc-23dd95b5a17a
+      responses:
+        '200':
+          description: success renew refresh and access token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseOnlyTokens"
+              example:
+                description: refresh token success
+                error_message: ''
+                execute_at: 2024/10/30 22:46:04.684
+                result: success
+                value:
+                  refresh_token: 4d1aeb5b-24a9-4dc9-bb39-c796e4d73e78
+                  access_token: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjlkODhkM2...
+        '401':
+          description: invalid refresh token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  description:
+                    type: string
+                  error_message:
+                    type: string
+                  execute_at:
+                    type: string
+                  result:
+                    type: string
+              examples:
+                Wrong Token:
+                  description: access token & refresh token is different
+                  value:
+                    description:
+                    - 'invalid refresh token, msg: failed to read refresh token, err:
+                      no rows in result set'
+                    error_message: Unauthorized
+                    execute_at: 2024/10/30 22:47:38.331
+                    result: failure
+                Expire Token:
+                  description: refresh token is expire
+                  value:
+                    description:
+                    - refresh token is expire
+                    error_message: Unauthorized
+                    execute_at: 2024/10/30 22:47:38.331
+                    result: failure
+  /api/v1/auth/delete_user:
+    delete:
+      summary: Delete user
+      description: Delete user from database using access token in auth header
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: Authorization
+          schema:
+            type: string
+            format: bearer
+          description: Bearer refresh_token
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      value:
+                        type: string
+              example:
+                description: user deleted
+                error_message: ""
+                execute_at: 2024/09/22 19:44:11.778
+                result: success
+                value: ""
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              examples:
+                blacklist token:
+                  value:
+                    description: 
+                    - token is blacklist
+                    error_message: Unauthorized
+                    execute_at: 2024/09/22 19:44:11.778
+                    result: failure
+                expired access token:
+                  description: empty auth header
+                  value:
+                    description:
+                    - 'failed to parse token when verifying, err: token has invalid claims: token is expired'
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/09/22 19:44:11.778
+                    result: failure
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              example:
+                description: 
+                - 'failed to delete user, err: no user found'
+                error_message: Unauthorized
+                execute_at: 2024/09/22 19:44:11.778
+                result: failure
+  /api/v1/product/create:
+    post:
+      summary: create new product
+      description: add new product to database
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductRequest"
+            examples:
+              all parameters:
+                description: input all parameter
+                value:
+                  name: lamp
+                  description: led lamp from philips with 3 years of warranty
+                  price: 5
+                  availability: 27
+              only name:
+                description: input all parameter
+                value:
+                  name: laptop
+      responses:
+        "201":
+          description: created product data with id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseProduct"
+              examples:
+                all parameter:
+                  description: fill all parameter in request body
+                  value:
+                    description: create new product success
+                    error_message: ''
+                    execute_at: 2024/11/04 15:59:03.626
+                    result: success
+                    value:
+                      id: 94
+                      name: lamp
+                      description: have 3 years warranty
+                      price: 5
+                      availability: 10
+                only name:
+                  description: fill all parameter in request body
+                  value:
+                    description: create new product success
+                    error_message: ''
+                    execute_at: 2024/11/04 15:59:03.626
+                    result: success
+                    value:
+                      id: 97
+                      name: laptop
+                      description: ""
+                      price: 0
+                      availability: 0
+        "422":
+          description: Unprocessably Entity, when input is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              examples:
+                empty name:
+                  description: name is empty in request body
+                  value:
+                    description: 
+                    - Name is a required field
+                    error_message: Unauthorized
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+                invalid input:
+                  description: input is not following requirement
+                  value:
+                    description: 
+                    - Price must be 0 or greater
+                    - Availability must be 0 or greater
+                    error_message: Unauthorized
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+        "409":
+          description: Conflict, using a name that already exists in database
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              example:
+                description: 
+                - duplicate data
+                error_message: Conflict
+                execute_at: 2024/11/04 20:50:08.938
+                result: failure
+        "401":
+          description: Unauthorized, make request with expired access token
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              example:
+                description: 
+                - 'failed to parse token when verifying, err: token has invalid claims: token is expired'
+                error_message: Conflict
+                execute_at: 2024/11/04 20:50:08.938
+                result: Unauthorized
+  /api/v1/product/get/{id}:
+    get:
+      summary: get product
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          description: The product ID
+      responses:
+        "200":
+          description: OK, success get product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseProduct"
+              example:
+                description: success get product
+                error_message: ''
+                execute_at: 2024/11/04 15:59:03.626
+                result: success
+                value:
+                  id: 94
+                  name: lamp
+                  description: have 3 years warranty
+                  price: 5
+                  availability: 10
+        "400":
+          description: Bad Request, no product found in database
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              example:
+                description: 
+                - no rows in result set
+                error_message: Bad Request
+                execute_at: 2024/11/04 20:50:08.938
+                result: failure
+        "401":
+          description: Unauthorized, request without auth header
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              example:
+                description: 
+                - no authorization header found
+                error_message: Unauthorized
+                execute_at: 2024/11/04 20:50:08.938
+                result: failure
+  /api/v1/product/list?{page}&{limit}:
+    get:
+      summary: list all products
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+          example: 3
+          description: data for current page
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+          example: 3
+          description: the number of products one to display per page
+      responses:
+        200:
+          description: list of products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseListProduct'
+              examples:
+                Data:
+                  description: success with data
+                  value:
+                    description: "list of books"
+                    error_message: ""
+                    execute_at: "2024/11/05 01:58:18.341"
+                    pagination: 
+                      current_page: "3"
+                      total_pages: "4"
+                    result: "success"
+                    value: 
+                    - id: "196"
+                      name: "ihxkcbs"
+                      description: "ttbhoubaiokiszzbrhfyfutgezugfqnrwxpcmqcwqsstgkgewj"
+                      price: "467"
+                      availability: "28"
+                    - id: "197"
+                      name: "myngees"
+                      description: "isruskqxyqgzfituknqiyhldptzgzpdjnlpurikqhagmrwutqc"
+                      price: "100"
+                      availability: "36"
+                    - id: "198"
+                      name: "wgckpte"
+                      description: "favziqlioilnfpwthlpxkjhozxlxsjneygvtkaorpapufpirbg"
+                      price: "455"
+                      availability: "9"
+                No Data:
+                  description: success with data
+                  value:
+                    description: "list of books"
+                    error_message: ""
+                    execute_at: "2024/11/05 01:58:18.341"
+                    pagination: 
+                      current_page: "3"
+                      total_pages: "1"
+                    result: "success"
+                    value: 
+                Default Params:
+                  description: 'using default params if params not filled or negative, default: page = 1 & limit = 10'
+                  value:
+                    description: "list of books"
+                    error_message: ""
+                    execute_at: "2024/11/05 01:58:45.612"
+                    pagination: 
+                      current_page: "1"
+                      total_pages: "1"
+                    result: "success"
+                    value: 
+                    - id: "190"
+                      name: "bxrfjmd"
+                      description: "zoidmoxtqsncnlmqogkqmpvyraceswhkvfduatdfdjaprolqza"
+                      price: "398"
+                      availability: "3"
+                    - id: "191"
+                      name: "hzpelpg"
+                      description: "ewelaruhanevcuvixfufnorhdfbqkcgahsvlzycezymbpfyvzn"
+                      price: "268"
+                      availability: "43"
+                    - id: "192"
+                      name: "pcrqbya"
+                      description: "sglmfmnxobfjghkwetwfxbepznvwppmvdcgelseanhxbzznrmu"
+                      price: "486"
+                      availability: "32"
+                    - id: "193"
+                      name: "bucnxtw"
+                      description: "nixnpfayufhfstajrcjrxnvslydargsyjtclklefvmembemeln"
+                      price: "350"
+                      availability: "17"
+                    - id: "194"
+                      name: "bmitnqt"
+                      description: "eglqlxhuoucpaytshtwtaezxjhqzzefzbqtyvlrdimnszbedqe"
+                      price: "190"
+                      availability: "2"
+                    - id: "195"
+                      name: "ilppmyg"
+                      description: "miyshlfcnoapngtparyldanzdibavzdfwbrrwpgnleatwuxmlx"
+                      price: "496"
+                      availability: "2"
+                    - id: "196"
+                      name: "ihxkcbs"
+                      description: "ttbhoubaiokiszzbrhfyfutgezugfqnrwxpcmqcwqsstgkgewj"
+                      price: "467"
+                      availability: "28"
+                    - id: "197"
+                      name: "myngees"
+                      description: "isruskqxyqgzfituknqiyhldptzgzpdjnlpurikqhagmrwutqc"
+                      price: "100"
+                      availability: "36"
+                    - id: "198"
+                      name: "wgckpte"
+                      description: "favziqlioilnfpwthlpxkjhozxlxsjneygvtkaorpapufpirbg"
+                      price: "455"
+                      availability: "9"
+                    - id: "199"
+                      name: "xgrjvdn"
+                      description: "jpjnrznttfkvfvmhiffugvnimxgjpmqvynloooyuzdcavnxqmz"
+                      price: "92"
+                      availability: "28"
+  /api/v1/products/update:
+    put:
+      summary: update product
+      description: change product data
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Product"
+            examples:
+              all parameters:
+                description: input all parameter
+                value:
+                  id: 3
+                  name: speaker
+                  description: from sony with 5 years of warranty
+                  price: 750
+                  availability: 3
+              only name:
+                description: input all parameter
+                value:
+                  id: 5
+                  name: laptop
+              
+      responses:
+        "200":
+          description: OK, success update product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseProduct"
+              examples:
+                All Parameter:
+                  description: response for all request body parameter filled
+                  value:
+                    description: update success
+                    error_message: ''
+                    execute_at: 2024/11/04 15:59:03.626
+                    result: success
+                    value:
+                      id: 3
+                      name: speaker
+                      description: from sony with 5 years of warranty
+                      price: 750
+                      availability: 3
+                Default Value:
+                  description: response when only name parameter filled
+                  value:
+                    description: update success
+                    error_message: ''
+                    execute_at: 2024/11/04 15:59:03.626
+                    result: success
+                    value:
+                      id: 8
+                      name: table
+                      description: ""
+                      price: 0
+                      availability: 0
+        "409":
+          description: Conflict, update with name that already exists in database
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              example:
+                description: 
+                - duplicate data
+                error_message: Conflict
+                execute_at: 2024/11/04 15:59:03.626
+                result: failure
+        "422":
+          description: Unprocessable Entity, not provide id field
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              example:
+                description: 
+                - ID is a required field
+                error_message: Unprocessable Entity
+                execute_at: 2024/11/04 15:59:03.626
+                result: failure
+  /api/v1/product/delete/{id}:
+    delete:
+      summary: delete product
+      description: delete a product using product ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+          example: 95
+          description: The product ID
+      responses:
+        "200":
+          description: OK, success get product
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BaseResponse"
+                  - type: object
+                    properties:
+                      value:
+                        type: string
+              example:
+                description: success deleted product
+                error_message: ''
+                execute_at: 2024/11/04 15:59:03.626
+                result: success
+                value: ""
+        "400":
+          description: Bad Request, no product found in database
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              example:
+                description: 
+                - 'failed to delete product, err: no row deleted'
+                error_message: Bad Request
+                execute_at: 2024/11/04 20:50:08.938
+                result: failure
+                
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    error:
+      type: object
+      properties:
+        description:
+          type: array
+        error_message:
+          type: string
+        execute_at:
+          type: string
+        result:
+          type: string
+    BaseResponse:
+      type: object
+      properties:
+        description:
+          type: string
+        error_message:
+          type: string
+        execute_at:
+          type: string
+        result:
+          type: string
+    ValueWithTokens:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+    ValueWithoutTokens:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+    ValueOnlyTokens:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+        token_token:
+          type: string
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: integer
+        availability:
+          type: integer
+      required:
+        - id
+    pagination:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        total_page:
+          type: integer
+    ProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          minLength: 0
+        price:
+          type: integer
+          minimum: 0
+        availability:
+          type: integer
+          minimum: 0
+      required:
+        - name
+
+    ResponseWithTokens:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            value:
+              $ref: '#/components/schemas/ValueWithTokens'
+
+    ResponseWithoutTokens:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            value:
+              $ref: '#/components/schemas/ValueWithoutTokens'
+    
+    ResponseOnlyTokens:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            value:
+              $ref: '#/components/schemas/ValueOnlyTokens'
+    
+    ResponseProduct:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            value:
+              $ref: '#/components/schemas/Product'
+    
+    ResponseListProduct:
+      allOf:
+        - $ref: '#components/schemas/BaseResponse'
+        - type: object
+          properties:
+            pagination:
+              $ref: '#/components/schemas/pagination'
+        - type: array
+          properties:
+            value:
+              $ref: '#/components/schemas/Product'
