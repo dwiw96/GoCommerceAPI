@@ -18,7 +18,7 @@ UPDATE
     users
 SET
     username = coalesce($1, username),
-    hashed_password = coalesce($2, hashed_password),
+    hashed_password = coalesce($2, hashed_password)
 WHERE
     id = $3
 AND (
@@ -45,7 +45,7 @@ WHERE id = $1 LIMIT 1;
 
 -- name: ListProducts :many
 SELECT * FROM products
-ORDER BY name ASC LIMIT $1 OFFSET $2;
+ORDER BY id ASC LIMIT $1 OFFSET $2;
 
 -- name: UpdateProduct :one
 UPDATE 
@@ -75,8 +75,8 @@ INSERT INTO wallets(
     $1, $2
 ) RETURNING *;
 
--- name: GetWalletByID :one
-SELECT * FROM wallets WHERE id = $1;
+-- name: GetWalletByUserID :one
+SELECT * FROM wallets WHERE user_id = $1;
 
 -- name: ListWallets :many
 SELECT * FROM wallets 
@@ -86,9 +86,10 @@ ORDER BY id ASC LIMIT $1 OFFSET $2;
 UPDATE
     wallets
 SET
-    balance = balance + (-$1), 
-    updated = NOW()
-WHERE id = $2
+    balance = balance + $1, 
+    updated_at = NOW()
+WHERE 
+    user_id = $2
 RETURNING *;
 
 -- name: DeleteWallet :exec

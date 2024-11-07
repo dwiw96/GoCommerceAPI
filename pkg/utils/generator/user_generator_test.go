@@ -27,6 +27,9 @@ func TestRandomInt(t *testing.T) {
 		}, {
 			min: 0,
 			max: 100,
+		}, {
+			min: -500,
+			max: -1,
 		},
 	}
 

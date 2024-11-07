@@ -20,7 +20,8 @@ CREATE INDEX ix_products_availability ON products(availability);
 CREATE TABLE wallets(
     id INT GENERATED ALWAYS AS IDENTITY
         CONSTRAINT pk_wallets_id PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT NOT NULL
+        CONSTRAINT uq_wallets_user_id UNIQUE,
         CONSTRAINT fk_wallets_user_id FOREIGN KEY (user_id)
             REFERENCES users(id),
     balance INT NOT NULL DEFAULT 0
