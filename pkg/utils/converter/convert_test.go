@@ -61,3 +61,46 @@ func TestConvertStrToInt(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertStrToInt32(t *testing.T) {
+	testCases := []struct {
+		input string
+		ans   int32
+		isErr bool
+	}{
+		{
+			input: "0",
+			ans:   0,
+			isErr: false,
+		}, {
+			input: "50",
+			ans:   50,
+			isErr: false,
+		}, {
+			input: "324",
+			ans:   324,
+			isErr: false,
+		}, {
+			input: "-324",
+			ans:   -324,
+			isErr: false,
+		}, {
+			input: "32a4",
+			ans:   -1,
+			isErr: true,
+		},
+	}
+
+	for _, tC := range testCases {
+		t.Run(tC.input, func(t *testing.T) {
+			res, err := ConvertStrToInt32(tC.input)
+			if !tC.isErr {
+				require.NoError(t, err)
+				assert.Equal(t, tC.ans, res)
+			} else {
+				require.Error(t, err)
+				assert.Equal(t, tC.ans, res)
+			}
+		})
+	}
+}

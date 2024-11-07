@@ -15,6 +15,10 @@ import (
 	productsHandler "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/handler"
 	productsRepository "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/repository"
 	productsService "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/service"
+
+	walletsHandler "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/handler"
+	walletsRepository "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/repository"
+	walletsService "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/service"
 )
 
 func InitFactory(router *gin.Engine, pool *pgxpool.Pool, rdClient *redis.Client, ctx context.Context) {
@@ -26,4 +30,8 @@ func InitFactory(router *gin.Engine, pool *pgxpool.Pool, rdClient *redis.Client,
 	iProductRep := productsRepository.NewProductRepository(pool)
 	iProductService := productsService.NewProductService(ctx, iProductRep)
 	productsHandler.NewProductHandler(router, iProductService, pool, rdClient, ctx)
+
+	iWalletsRep := walletsRepository.NewWalletsRepository(pool, ctx)
+	iWalletsService := walletsService.NewWalletsService(ctx, iWalletsRep)
+	walletsHandler.NewWalletsHandler(router, iWalletsService, pool, rdClient, ctx)
 }

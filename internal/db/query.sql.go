@@ -172,12 +172,12 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	return i, err
 }
 
-const getWalletByID = `-- name: GetWalletByID :one
-SELECT id, user_id, balance, created_at, updated_at FROM wallets WHERE id = $1
+const getWalletByUserID = `-- name: GetWalletByUserID :one
+SELECT id, user_id, balance, created_at, updated_at FROM wallets WHERE user_id = $1
 `
 
-func (q *Queries) GetWalletByID(ctx context.Context, id int32) (Wallet, error) {
-	row := q.db.QueryRow(ctx, getWalletByID, id)
+func (q *Queries) GetWalletByUserID(ctx context.Context, userID int32) (Wallet, error) {
+	row := q.db.QueryRow(ctx, getWalletByUserID, userID)
 	var i Wallet
 	err := row.Scan(
 		&i.ID,
@@ -191,7 +191,7 @@ func (q *Queries) GetWalletByID(ctx context.Context, id int32) (Wallet, error) {
 
 const listProducts = `-- name: ListProducts :many
 SELECT id, name, description, price, availability FROM products
-ORDER BY name ASC LIMIT $1 OFFSET $2
+ORDER BY id ASC LIMIT $1 OFFSET $2
 `
 
 type ListProductsParams struct {
@@ -315,8 +315,8 @@ SET
 WHERE
     id = $3
 AND (
-    $1::VARCHAR IS NOT NULL AND $1 IS DISTINCT FROM name OR
-    $2::TEXT IS NOT NULL AND $2 IS DISTINCT FROM description
+    $1::VARCHAR IS NOT NULL AND $1 IS DISTINCT FROM username OR
+    $2::VARCHAR IS NOT NULL AND $2 IS DISTINCT FROM hashed_password
 ) RETURNING id, username, email, hashed_password, is_verified, created_at
 `
 
@@ -340,23 +340,38 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	return i, err
 }
 
+const updateUserVerification = `-- name: UpdateUserVerification :exec
+UPDATE users SET is_verified = TRUE WHERE id = $1 AND email = $2
+`
+
+type UpdateUserVerificationParams struct {
+	ID    int32
+	Email string
+}
+
+func (q *Queries) UpdateUserVerification(ctx context.Context, arg UpdateUserVerificationParams) error {
+	_, err := q.db.Exec(ctx, updateUserVerification, arg.ID, arg.Email)
+	return err
+}
+
 const updateWallet = `-- name: UpdateWallet :one
 UPDATE
     wallets
 SET
-    balance = balance + (-$1), 
+    balance = balance + $1, 
     updated = NOW()
-WHERE id = $2
+WHERE 
+    user_id = $2
 RETURNING id, user_id, balance, created_at, updated_at
 `
 
 type UpdateWalletParams struct {
-	Column1 interface{}
-	ID      int32
+	Balance int32
+	UserID  int32
 }
 
 func (q *Queries) UpdateWallet(ctx context.Context, arg UpdateWalletParams) (Wallet, error) {
-	row := q.db.QueryRow(ctx, updateWallet, arg.Column1, arg.ID)
+	row := q.db.QueryRow(ctx, updateWallet, arg.Balance, arg.UserID)
 	var i Wallet
 	err := row.Scan(
 		&i.ID,
