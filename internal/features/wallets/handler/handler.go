@@ -151,6 +151,12 @@ func (h *walletsHandler) depositToWallet(c *gin.Context) {
 func (h *walletsHandler) withdrawFromWallet(c *gin.Context) {
 	var urlParam walletUrlParam
 	if err := c.ShouldBindUri(&urlParam); err != nil {
+		if err := h.validate.Struct(urlParam); err != nil {
+			errTranslated := translateError(h.trans, err)
+			responses.ErrorJSON(c, 422, errTranslated, c.Request.RemoteAddr)
+			return
+		}
+
 		responses.ErrorJSON(c, 422, []string{err.Error()}, c.Request.RemoteAddr)
 		return
 	}
@@ -158,16 +164,15 @@ func (h *walletsHandler) withdrawFromWallet(c *gin.Context) {
 	var reqBody updateWalletReq
 	err := c.ShouldBindJSON(&reqBody)
 	if err != nil {
+		if err := h.validate.Struct(reqBody); err != nil {
+			errTranslated := translateError(h.trans, err)
+			responses.ErrorJSON(c, 422, errTranslated, c.Request.RemoteAddr)
+			return
+		}
+
 		responses.ErrorJSON(c, 422, []string{err.Error()}, c.Request.RemoteAddr)
 		return
 	}
-
-	// err = h.validate.Struct(reqBody)
-	// if err != nil {
-	// 	errTranslated := translateError(h.trans, err)
-	// 	responses.ErrorJSON(c, 422, errTranslated, c.Request.RemoteAddr)
-	// 	return
-	// }
 
 	arg := wallets.UpdateWalletParams{
 		Amount: reqBody.Amount,
@@ -182,6 +187,6 @@ func (h *walletsHandler) withdrawFromWallet(c *gin.Context) {
 
 	respBody := toWalletResp(res)
 
-	response := responses.SuccessWithDataResponse(respBody, code, "deposit to wallet success")
+	response := responses.SuccessWithDataResponse(respBody, code, "withdraw from wallet success")
 	c.IndentedJSON(code, response)
 }
