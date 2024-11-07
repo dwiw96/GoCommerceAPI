@@ -57,7 +57,7 @@ func (s *walletsService) CreateWallet(arg wallets.CreateWalletParams) (res *wall
 		return nil, code, err
 	}
 
-	return res, errs.CodeSuccess, err
+	return res, errs.CodeSuccessCreate, err
 }
 
 func (s *walletsService) GetWalletByUserID(userID int32) (res *wallets.Wallet, code int, err error) {
