@@ -776,7 +776,263 @@ paths:
                 error_message: Bad Request
                 execute_at: 2024/11/04 20:50:08.938
                 result: failure
-                
+  /api/v1/wallets/:
+    post:
+      summary: create new wallet
+      description: add new wallet to database with referenrce to the user
+      security:
+        - bearerAuth: []
+      
+      responses:
+        "201":
+          description: succcess create new wallet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseWallet"
+              example:
+                description: create new wallet success
+                error_message: ''
+                execute_at: '2024/11/07 18:35:54.396'
+                result: success
+                value:
+                  balance: 0
+                  created_at: '2024-11-07T09:35:54.373819Z'
+                  updated_at: '2024-11-07T09:35:54.373819Z'
+        "409":
+          description: Conflict, user already have wallet
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              example:
+                description: 
+                - duplicate data
+                error_message: Conflict
+                execute_at: 2024/11/04 20:50:08.938
+                result: failure
+  /api/v1/wallets/{user_id}:
+    get:
+      summary: get a wallet
+      description: get wallet data
+      security:
+        - bearerAuth: []
+      
+      responses:
+        "200":
+          description: success getting wallet data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseWallet"
+              example:
+                description: get wallet success
+                error_message: ''
+                execute_at: '2024/11/07 14:58:55.994'
+                result: success
+                value:
+                  balance: 0
+                  created_at: '2024-11-07T09:35:54.373819Z'
+                  updated_at: '2024-11-07T09:35:54.373819Z'
+        "400":
+          description: Bad Request, wallet is not created yet
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              example:
+                description: 
+                - no data found
+                error_message: Bad Request
+                execute_at: 2024/11/04 20:50:08.938
+                result: failure
+        "422":
+          description: Unprocessably Entity, invalid url param
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              example:
+                description: 
+                - UserID is a required field
+                error_message: Unprocessable Entity
+                execute_at: 2024/11/04 20:50:08.938
+                result: failure
+  /api/v1/wallets/{user_id}/deposit:
+    put:
+      summary: deposit
+      description: deposit to a wallet
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: integer
+                  minimum: 1
+              required:
+                - amount
+            example:
+              amount: 5000
+      
+      responses:
+        "200":
+          description: Success to deposit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseWallet"
+              example:
+                description: deposit to wallet success
+                error_message: ''
+                execute_at: '2024/11/07 14:58:55.994'
+                result: success
+                value:
+                  balance: 5000
+                  created_at: '2024-11-07T09:35:54.373819Z'
+                  updated_at: '2024-11-07T09:35:54.373819Z'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              examples:
+                negative amount:
+                  description: 'the amount is negative (ex: "amount": -5000)'
+                  value:
+                    description: 
+                    - invalid input
+                    error_message: Bad Request
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+                No wallet:
+                  description: 'deposit to wallet that not created yet'
+                  value:
+                    description: 
+                    - no data found
+                    error_message: Bad Request
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+        "422":
+          description: Unprocessably Entity, invalid url param
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              examples:
+                Invalid Request Body:
+                  description: request body is null or wrong
+                  value:
+                    description: 
+                    - amount is a required field
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+                Invalid Url Param:
+                  description: url param user_id is invalid
+                  value:
+                    description: 
+                    - UserID is a required field
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+  /api/v1/wallets/{user_id}/withdraw:
+    put:
+      summary: withdraw
+      description: withdraw from a wallet
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: integer
+                  minimum: 1
+              required:
+                - amount
+            example:
+              amount: 4500
+      
+      responses:
+        "200":
+          description: Success to withdraw
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseWallet"
+              example:
+                description: withdraw from wallet success
+                error_message: ''
+                execute_at: '2024/11/07 14:58:55.994'
+                result: success
+                value:
+                  balance: 500
+                  created_at: '2024-11-07T09:35:54.373819Z'
+                  updated_at: '2024-11-07T09:35:54.373819Z'
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              examples:
+                negative balance:
+                  description: 'withdrawing more than the balance'
+                  value:
+                    description: 
+                    - balance minimum is 0
+                    error_message: Bad Request
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+                negative amount:
+                  description: 'the amount is negative (ex: "amount": -4500)'
+                  value:
+                    description: 
+                    - invalid input
+                    error_message: Bad Request
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+                No wallet:
+                  description: 'withdraw from a wallet that not created yet'
+                  value:
+                    description: 
+                    - no data found
+                    error_message: Bad Request
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+        "422":
+          description: Unprocessably Entity, invalid url param
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              examples:
+                Without Request Body:
+                  description: request body is null or wrong
+                  value:
+                    description: 
+                    - Amount is a required field
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+                Invalid Url Param:
+                  description: url param user_id is invalid
+                  value:
+                    description: 
+                    - UserID is a required field
+                    error_message: Unprocessable Entity
+                    execute_at: 2024/11/04 20:50:08.938
+                    result: failure
+
 components:
   securitySchemes:
     bearerAuth:
@@ -871,6 +1127,15 @@ components:
           minimum: 0
       required:
         - name
+    Wallet:
+      type: object
+      properties:
+        balance:
+          type: integer
+        created_at:
+          type: string
+        updated_at:
+          type: string
 
     ResponseWithTokens:
       allOf:
@@ -915,3 +1180,12 @@ components:
           properties:
             value:
               $ref: '#/components/schemas/Product'
+    
+    ResponseWallet:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            value:
+              $ref: '#components/schemas/Wallet'
+    
