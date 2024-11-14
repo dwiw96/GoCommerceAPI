@@ -47,6 +47,57 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 	return i, err
 }
 
+const createTransaction = `-- name: CreateTransaction :one
+INSERT INTO 
+    transaction_histories(
+        from_wallet_id,
+        to_wallet_id,
+        product_id,
+        amount,
+        quantity,
+        t_type,
+        t_status
+    )
+VALUES (
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING id, from_wallet_id, to_wallet_id, product_id, amount, quantity, t_type, t_status, created_at
+`
+
+type CreateTransactionParams struct {
+	FromWalletID pgtype.Int4
+	ToWalletID   pgtype.Int4
+	ProductID    pgtype.Int4
+	Amount       int32
+	Quantity     pgtype.Int4
+	TType        TransactionTypes
+	TStatus      TransactionStatus
+}
+
+func (q *Queries) CreateTransaction(ctx context.Context, arg CreateTransactionParams) (TransactionHistory, error) {
+	row := q.db.QueryRow(ctx, createTransaction,
+		arg.FromWalletID,
+		arg.ToWalletID,
+		arg.ProductID,
+		arg.Amount,
+		arg.Quantity,
+		arg.TType,
+		arg.TStatus,
+	)
+	var i TransactionHistory
+	err := row.Scan(
+		&i.ID,
+		&i.FromWalletID,
+		&i.ToWalletID,
+		&i.ProductID,
+		&i.Amount,
+		&i.Quantity,
+		&i.TType,
+		&i.TStatus,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users(
     username,
@@ -261,6 +312,24 @@ func (q *Queries) ListWallets(ctx context.Context, arg ListWalletsParams) ([]Wal
 	return items, nil
 }
 
+const purchaseProduct = `-- name: PurchaseProduct :exec
+BEGIN
+`
+
+func (q *Queries) PurchaseProduct(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, purchaseProduct)
+	return err
+}
+
+const transactionToWallet = `-- name: TransactionToWallet :exec
+BEGIN
+`
+
+func (q *Queries) TransactionToWallet(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, transactionToWallet)
+	return err
+}
+
 const updateProduct = `-- name: UpdateProduct :one
 UPDATE 
     products
@@ -302,6 +371,68 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		&i.Description,
 		&i.Price,
 		&i.Availability,
+	)
+	return i, err
+}
+
+const updateProductAvailability = `-- name: UpdateProductAvailability :one
+UPDATE 
+    products
+SET 
+    availability = coalesce(availability + ($1), availability)
+WHERE 
+    id = $2
+AND 
+    $1::INT IS NOT NULL AND (availability + $1) >= 0
+RETURNING id, name, description, price, availability
+`
+
+type UpdateProductAvailabilityParams struct {
+	Availability int32
+	ID           int32
+}
+
+func (q *Queries) UpdateProductAvailability(ctx context.Context, arg UpdateProductAvailabilityParams) (Product, error) {
+	row := q.db.QueryRow(ctx, updateProductAvailability, arg.Availability, arg.ID)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Price,
+		&i.Availability,
+	)
+	return i, err
+}
+
+const updateTransactionStatus = `-- name: UpdateTransactionStatus :one
+UPDATE
+    transaction_histories
+SET
+    t_status = $1
+WHERE 
+    id = $2
+RETURNING id, from_wallet_id, to_wallet_id, product_id, amount, quantity, t_type, t_status, created_at
+`
+
+type UpdateTransactionStatusParams struct {
+	TStatus TransactionStatus
+	ID      int32
+}
+
+func (q *Queries) UpdateTransactionStatus(ctx context.Context, arg UpdateTransactionStatusParams) (TransactionHistory, error) {
+	row := q.db.QueryRow(ctx, updateTransactionStatus, arg.TStatus, arg.ID)
+	var i TransactionHistory
+	err := row.Scan(
+		&i.ID,
+		&i.FromWalletID,
+		&i.ToWalletID,
+		&i.ProductID,
+		&i.Amount,
+		&i.Quantity,
+		&i.TType,
+		&i.TStatus,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -359,7 +490,7 @@ UPDATE
     wallets
 SET
     balance = balance + $1, 
-    updated = NOW()
+    updated_at = NOW()
 WHERE 
     user_id = $2
 RETURNING id, user_id, balance, created_at, updated_at
