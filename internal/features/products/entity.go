@@ -32,6 +32,11 @@ type ListProductsParams struct {
 	Offset int32
 }
 
+type UpdateProductAvailabilityParams struct {
+	ID           int32 `json:"id"`
+	Availability int32 `json:"availability"`
+}
+
 type IService interface {
 	CreateProduct(params CreateProductParams) (res *Product, code int, err error)
 	GetProductByID(id string) (res *Product, code int, err error)
@@ -47,4 +52,5 @@ type IRepository interface {
 	GetTotalProducts(ctx context.Context) (int, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (*Product, error)
 	DeleteProduct(ctx context.Context, id int32) error
+	UpdateProductAvailability(ctx context.Context, arg UpdateProductAvailabilityParams) (*Product, error)
 }
