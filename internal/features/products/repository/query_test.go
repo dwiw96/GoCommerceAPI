@@ -405,3 +405,68 @@ func TestDeleteProduct(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateProductAvailability(t *testing.T) {
+	_, resProduct := createProductTest(t)
+	t.Log("product:", resProduct)
+	added := generator.RandomInt32(10, 50)
+	substract := generator.RandomInt32(-10, -1)
+	t.Log("added:", added)
+	t.Log("substract:", substract)
+	testCases := []struct {
+		desc string
+		arg  product.UpdateProductAvailabilityParams
+		ans  product.Product
+		err  bool
+	}{
+		{
+			desc: "success_added",
+			arg: product.UpdateProductAvailabilityParams{
+				ID:           resProduct.ID,
+				Availability: added,
+			},
+			ans: product.Product{
+				ID:           resProduct.ID,
+				Availability: resProduct.Availability + added,
+			},
+			err: false,
+		}, {
+			desc: "success_substract",
+			arg: product.UpdateProductAvailabilityParams{
+				ID:           resProduct.ID,
+				Availability: substract,
+			},
+			ans: product.Product{
+				ID:           resProduct.ID,
+				Availability: resProduct.Availability + added + substract,
+			},
+			err: false,
+		}, {
+			desc: "failed_negative_availability",
+			arg: product.UpdateProductAvailabilityParams{
+				ID:           resProduct.ID,
+				Availability: -(resProduct.Availability + added) * 2,
+			},
+			err: true,
+		}, {
+			desc: "failed_wrong_id",
+			arg: product.UpdateProductAvailabilityParams{
+				ID:           0,
+				Availability: generator.RandomInt32(0, 50),
+			},
+			err: true,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res, err := repoTest.UpdateProductAvailability(ctx, tC.arg)
+			if !tC.err {
+				require.NoError(t, err)
+				assert.Equal(t, tC.ans.Availability, res.Availability)
+				t.Log("res:", res)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
