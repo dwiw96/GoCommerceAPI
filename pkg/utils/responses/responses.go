@@ -88,3 +88,14 @@ func SuccessResponse(msg string) map[string]interface{} {
 		"execute_at":    time.Now().UTC().Add(time.Hour * 9).Format("2006/01/02 15:04:05.000"),
 	}
 }
+
+func ErrorWithDataResponse(data interface{}, code int, err, msg string) map[string]interface{} {
+	log.Printf(">>> %d, response: %s\n", code, msg)
+	return map[string]interface{}{
+		"error_message": err,
+		"result":        "success",
+		"value":         data,
+		"description":   msg,
+		"execute_at":    time.Now().UTC().Add(time.Hour * 9).Format("2006/01/02 15:04:05.000"),
+	}
+}
