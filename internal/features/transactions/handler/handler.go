@@ -78,11 +78,14 @@ func (h *transactionsHandler) transaction(c *gin.Context) {
 		code int
 	)
 
+	transactionsArg := toTransactionstArg(authPayload.UserID, reqBody)
 	switch reqBody.TransactionType {
 	case "purchase":
-		purchaseArg := toPurchaseProductArg(authPayload.UserID, reqBody)
-		res, code, err = h.service.PurchaseProduct(purchaseArg)
+		res, code, err = h.service.PurchaseProduct(transactionsArg)
+	case "deposit":
+		res, code, err = h.service.Deposit(transactionsArg)
 	}
+
 	if err != nil && res != nil {
 		respBody := toTransactionResp(res)
 		response := responses.ErrorWithDataResponse(respBody, code, err.Error(), "failed")

@@ -75,3 +75,18 @@ func (s *transactionsService) PurchaseProduct(arg transactions.TransactionParams
 
 	return
 }
+
+func (s *transactionsService) Deposit(arg transactions.TransactionParams) (res *transactions.TransactionHistory, code int, err error) {
+	if arg.Amount <= int32(0) {
+		return nil, errs.CodeFailedUser, errs.ErrLessOrEqualToZero
+	}
+
+	code = errs.CodeSuccess
+	res, err = s.repo.TransactionDeposit(arg)
+	if err != nil {
+		code, err = handleError(err)
+		return res, code, err
+	}
+
+	return
+}
