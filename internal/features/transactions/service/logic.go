@@ -100,3 +100,21 @@ func (s *transactionsService) DepositOrWithdraw(arg transactions.TransactionPara
 
 	return
 }
+
+func (s *transactionsService) Transfer(arg transactions.TransactionParams) (res *transactions.TransactionHistory, code int, err error) {
+	if arg.Amount == int32(0) {
+		return nil, errs.CodeFailedUser, errs.ErrLessOrEqualToZero
+	}
+
+	arg.ProductID.Valid = false
+	arg.Quantity.Valid = false
+
+	code = errs.CodeSuccess
+	res, err = s.repo.TransactionTransfer(arg)
+	if err != nil {
+		code, err = handleError(err)
+		return res, code, err
+	}
+
+	return
+}

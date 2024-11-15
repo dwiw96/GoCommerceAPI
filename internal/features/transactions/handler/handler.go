@@ -84,6 +84,8 @@ func (h *transactionsHandler) transaction(c *gin.Context) {
 		res, code, err = h.service.PurchaseProduct(transactionsArg)
 	case string(transactions.TransactionTypesDeposit), string(transactions.TransactionTypesWithdrawal):
 		res, code, err = h.service.DepositOrWithdraw(transactionsArg)
+	case string(transactions.TransactionTypesTransfer):
+		res, code, err = h.service.Transfer(transactionsArg)
 	}
 
 	if err != nil && res != nil {

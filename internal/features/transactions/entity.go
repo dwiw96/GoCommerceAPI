@@ -74,9 +74,11 @@ type IRepository interface {
 	UpdateTransactionStatus(arg UpdateTransactionStatusParams) (*TransactionHistory, error)
 	TransactionPurchaseProduct(arg TransactionParams) (*TransactionHistory, error)
 	TransactionDepositOrWithdraw(arg TransactionParams) (*TransactionHistory, error)
+	TransactionTransfer(arg TransactionParams) (*TransactionHistory, error)
 }
 
 type IService interface {
 	PurchaseProduct(arg TransactionParams) (res *TransactionHistory, code int, err error)
 	DepositOrWithdraw(arg TransactionParams) (res *TransactionHistory, code int, err error)
+	Transfer(arg TransactionParams) (res *TransactionHistory, code int, err error)
 }
