@@ -595,14 +595,12 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 	}
 }
 
-func TestTransactionDeposit(t *testing.T) {
+func TestTransactionDepositOrWithdraw(t *testing.T) {
 	user1, wallet1, _ := createPreparationTest(t)
 	t.Log("wallet1:", wallet1)
 
 	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
-	toWalletID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
 	amount := generator.RandomInt32(100, 1000)
-	tTypeDeposit := transactions.TransactionTypesDeposit
 
 	testCases := []struct {
 		desc  string
@@ -611,35 +609,67 @@ func TestTransactionDeposit(t *testing.T) {
 		isErr bool
 	}{
 		{
-			desc: "success_completed",
+			desc: "deposit_success_completed",
 			arg: transactions.TransactionParams{
-				UserID:     userID,
-				ToWalletID: toWalletID,
-				Amount:     amount,
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Valid: false},
+				ToWalletID:   pgtype.Int4{Int32: wallet1.ID, Valid: true},
+				Amount:       amount,
+				TType:        transactions.TransactionTypesDeposit,
 			},
 			ans: transactions.TransactionHistory{
 				FromWalletID: pgtype.Int4{Valid: false},
-				ToWalletID:   toWalletID,
+				ToWalletID:   pgtype.Int4{Int32: wallet1.ID, Valid: true},
 				ProductID:    pgtype.Int4{Valid: false},
 				Amount:       amount,
 				Quantity:     pgtype.Int4{Valid: false},
-				TType:        tTypeDeposit,
+				TType:        transactions.TransactionTypesDeposit,
 				TStatus:      transactions.TransactionStatusCompleted,
 			},
 			isErr: false,
 		}, {
-			desc: "failed_invalid_to_wallet_id",
+			desc: "deposit_failed_invalid_to_wallet_id",
 			arg: transactions.TransactionParams{
-				UserID:     userID,
-				ToWalletID: pgtype.Int4{Int32: wallet1.ID + 5, Valid: true},
-				Amount:     amount,
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Valid: false},
+				ToWalletID:   pgtype.Int4{Int32: wallet1.ID + 5, Valid: true},
+				Amount:       amount,
+				TType:        transactions.TransactionTypesDeposit,
+			},
+			isErr: true,
+		}, {
+			desc: "withdraw_success_completed",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
+				ToWalletID:   pgtype.Int4{Valid: false},
+				Amount:       -amount,
+				TType:        transactions.TransactionTypesWithdrawal,
+			},
+			ans: transactions.TransactionHistory{
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
+				ToWalletID:   pgtype.Int4{Valid: false},
+				ProductID:    pgtype.Int4{Valid: false},
+				Amount:       -amount,
+				Quantity:     pgtype.Int4{Valid: false},
+				TType:        transactions.TransactionTypesWithdrawal,
+				TStatus:      transactions.TransactionStatusCompleted,
+			},
+			isErr: false,
+		}, {
+			desc: "withdraw_failed_invalid_to_wallet_id",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID + 5, Valid: true},
+				ToWalletID:   pgtype.Int4{Valid: false},
+				Amount:       amount,
 			},
 			isErr: true,
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			res, err := repoTest.TransactionDeposit(tC.arg)
+			res, err := repoTest.TransactionDepositOrWithdraw(tC.arg)
 			if !tC.isErr {
 				require.NoError(t, err)
 				assert.NotZero(t, res.ID)

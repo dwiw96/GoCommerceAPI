@@ -80,10 +80,10 @@ func (h *transactionsHandler) transaction(c *gin.Context) {
 
 	transactionsArg := toTransactionstArg(authPayload.UserID, reqBody)
 	switch reqBody.TransactionType {
-	case "purchase":
+	case string(transactions.TransactionTypesPurchase):
 		res, code, err = h.service.PurchaseProduct(transactionsArg)
-	case "deposit":
-		res, code, err = h.service.Deposit(transactionsArg)
+	case string(transactions.TransactionTypesDeposit), string(transactions.TransactionTypesWithdrawal):
+		res, code, err = h.service.DepositOrWithdraw(transactionsArg)
 	}
 
 	if err != nil && res != nil {

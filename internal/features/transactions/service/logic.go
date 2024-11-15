@@ -28,12 +28,10 @@ func NewTransactionsService(ctx context.Context, repo transactions.IRepository) 
 func handleError(arg error) (code int, err error) {
 	log.Println(arg)
 	if errors.Is(arg, pgx.ErrNoRows) {
-		log.Println("ERRNOROWS")
 		return errs.CodeFailedUser, errs.ErrNoData
 	}
 	var pgErr *pgconn.PgError
 	if errors.As(arg, &pgErr) {
-		log.Println("pgErr:", pgErr)
 		if pgErr.ConstraintName == "ck_transactions_balance" {
 			return errs.CodeFailedUser, fmt.Errorf("balance minimum is 0")
 		}
@@ -76,13 +74,25 @@ func (s *transactionsService) PurchaseProduct(arg transactions.TransactionParams
 	return
 }
 
-func (s *transactionsService) Deposit(arg transactions.TransactionParams) (res *transactions.TransactionHistory, code int, err error) {
-	if arg.Amount <= int32(0) {
-		return nil, errs.CodeFailedUser, errs.ErrLessOrEqualToZero
+func (s *transactionsService) DepositOrWithdraw(arg transactions.TransactionParams) (res *transactions.TransactionHistory, code int, err error) {
+	if arg.TType == transactions.TransactionTypesDeposit {
+		if arg.Amount <= int32(0) {
+			return nil, errs.CodeFailedUser, errs.ErrLessOrEqualToZero
+		}
+		arg.FromWalletID.Valid = false
+	}
+	if arg.TType == transactions.TransactionTypesWithdrawal {
+		if arg.Amount >= int32(0) {
+			return nil, errs.CodeFailedUser, errs.ErrGreaterOrEqualToZero
+		}
+		arg.ToWalletID.Valid = false
 	}
 
+	arg.ProductID.Valid = false
+	arg.Quantity.Valid = false
+
 	code = errs.CodeSuccess
-	res, err = s.repo.TransactionDeposit(arg)
+	res, err = s.repo.TransactionDepositOrWithdraw(arg)
 	if err != nil {
 		code, err = handleError(err)
 		return res, code, err

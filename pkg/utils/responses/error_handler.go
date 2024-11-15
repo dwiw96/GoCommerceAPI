@@ -15,12 +15,13 @@ var (
 )
 
 var (
-	ErrNoData            = errors.New("no data found")  // no data found
-	ErrDuplicate         = errors.New("duplicate data") // duplicate data
-	ErrViolation         = errors.New("invalid input")  // invalid input
-	ErrCheckConstraint   = errors.New("invalid input")  // invalid input
-	ErrNotNull           = errors.New("input is empty") // input is empty
-	ErrInvalidInput      = errors.New("invalid input")  // invalid input
-	ErrServer            = errors.New("server error")   // server error
-	ErrLessOrEqualToZero = errors.New("amount must be more than 0")
+	ErrNoData               = errors.New("no data found")              // no data found
+	ErrDuplicate            = errors.New("duplicate data")             // duplicate data
+	ErrViolation            = errors.New("invalid input")              // invalid input
+	ErrCheckConstraint      = errors.New("invalid input")              // invalid input
+	ErrNotNull              = errors.New("input is empty")             // input is empty
+	ErrInvalidInput         = errors.New("invalid input")              // invalid input
+	ErrServer               = errors.New("server error")               // server error
+	ErrLessOrEqualToZero    = errors.New("amount must be more than 0") // amount must be more than 0
+	ErrGreaterOrEqualToZero = errors.New("amount must be less than 0") // amount must be less than 0
 )
