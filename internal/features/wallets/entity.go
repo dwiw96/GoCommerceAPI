@@ -18,14 +18,17 @@ type CreateWalletParams struct {
 }
 
 type UpdateWalletParams struct {
-	Amount int32
-	UserID int32
+	Amount   int32
+	UserID   int32
+	WalletID int32
 }
 
 type IRepository interface {
 	CreateWallet(arg CreateWalletParams) (*Wallet, error)
 	GetWalletByUserID(UserID int32) (*Wallet, error)
-	UpdateWallet(arg UpdateWalletParams) (*Wallet, error)
+	UpdateWalletByUserID(arg UpdateWalletParams) (*Wallet, error)
+	GetWalletByID(walletID int32) (*Wallet, error)
+	UpdateWalletByID(arg UpdateWalletParams) (*Wallet, error)
 }
 
 type IService interface {
