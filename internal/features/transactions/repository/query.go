@@ -179,7 +179,7 @@ func (t *transactionsRepository) TransactionPurchaseProduct(arg transactions.Tra
 			Amount: -amount,
 			UserID: arg.UserID.Int32,
 		}
-		_, err = tr.walletsRepo.UpdateWallet(updateWalletArg)
+		_, err = tr.walletsRepo.UpdateWalletByUserID(updateWalletArg)
 		if err != nil {
 			return fmt.Errorf("failed to update wallet, err: %w", err)
 		}
@@ -241,9 +241,82 @@ func (r *transactionsRepository) TransactionDepositOrWithdraw(arg transactions.T
 			Amount: arg.Amount,
 			UserID: arg.UserID.Int32,
 		}
-		_, err = tr.walletsRepo.UpdateWallet(updateWalletArg)
+		_, err = tr.walletsRepo.UpdateWalletByUserID(updateWalletArg)
 		if err != nil {
 			return fmt.Errorf("failed to update wallet, err: %w", err)
+		}
+
+		return err
+	})
+
+	// update transaction status
+	var errUpdateTransaction error
+	errUpdateStatus := r.ExecDbTx(func(tr *transactionsRepository) error {
+		argUpdateStatus := transactions.UpdateTransactionStatusParams{
+			Amount: arg.Amount,
+			ID:     res.ID,
+		}
+
+		if errTransaction == nil {
+			argUpdateStatus.TStatus = transactions.TransactionStatusCompleted
+		} else {
+			argUpdateStatus.TStatus = transactions.TransactionStatusFailed
+		}
+
+		res, errUpdateTransaction = tr.UpdateTransactionStatus(argUpdateStatus)
+		if errUpdateTransaction != nil {
+			return fmt.Errorf("failed to update transaction, err: %w", errUpdateTransaction)
+		}
+
+		return errUpdateTransaction
+	})
+
+	if errTransaction != nil {
+		return res, errTransaction
+	}
+
+	return res, errUpdateStatus
+}
+
+func (r *transactionsRepository) TransactionTransfer(arg transactions.TransactionParams) (*transactions.TransactionHistory, error) {
+	var (
+		res *transactions.TransactionHistory
+		err error
+	)
+
+	// create transaction history with 'pending' status
+	createTransactionArg := transactions.CreateTransactionParams{
+		FromWalletID: arg.FromWalletID,
+		ToWalletID:   arg.ToWalletID,
+		Amount:       arg.Amount,
+		TType:        arg.TType,
+		TStatus:      transactions.TransactionStatusPending,
+	}
+	res, err = r.CreateTransaction(createTransactionArg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create transaction, err: %w", err)
+	}
+
+	// update wallet balance
+	errTransaction := r.ExecDbTx(func(tr *transactionsRepository) error {
+		// update 'from_wallet' balance
+		updateWalletArg := wallets.UpdateWalletParams{
+			Amount:   -arg.Amount,
+			WalletID: arg.FromWalletID.Int32,
+		}
+		_, err = tr.walletsRepo.UpdateWalletByID(updateWalletArg)
+		if err != nil {
+			return fmt.Errorf("failed to update 'from_wallet', err: %w", err)
+		}
+
+		// update 'to_wallet' balance
+		updateWalletArg = wallets.UpdateWalletParams{
+			Amount:   arg.Amount,
+			WalletID: arg.ToWalletID.Int32,
+		}
+		_, err = tr.walletsRepo.UpdateWalletByID(updateWalletArg)
+		if err != nil {
+			return fmt.Errorf("failed to update 'to_wallet', err: %w", err)
 		}
 
 		return err

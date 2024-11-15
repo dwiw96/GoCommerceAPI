@@ -248,7 +248,7 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 	}
 }
 
-func TestDeposit(t *testing.T) {
+func TestDepositAndWithdraw(t *testing.T) {
 	user1, wallet1, _ := createPreparationTest(t)
 	t.Log("wallet1:", wallet1)
 
@@ -375,6 +375,120 @@ func TestDeposit(t *testing.T) {
 				assert.False(t, res.CreatedAt.Time.IsZero())
 			} else {
 				require.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestTransfer(t *testing.T) {
+	user1, wallet1, _ := createPreparationTest(t)
+	t.Log("wallet 1:", wallet1)
+	_, wallet2, _ := createPreparationTest(t)
+	t.Log("wallet 2:", wallet2)
+
+	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
+	wallet1ID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
+	wallet2ID := pgtype.Int4{Int32: wallet2.ID, Valid: true}
+	amount := generator.RandomInt32(100, 1000)
+	transferType := transactions.TransactionTypesTransfer
+	failedStatus := transactions.TransactionStatusFailed
+
+	testCases := []struct {
+		desc      string
+		arg       transactions.TransactionParams
+		ans       transactions.TransactionHistory
+		code      int
+		isSuccess bool
+		isErr     bool
+	}{
+		{
+			desc: "success_completed",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: wallet1ID,
+				ToWalletID:   wallet2ID,
+				Amount:       amount,
+				TType:        transferType,
+			},
+			ans: transactions.TransactionHistory{
+				FromWalletID: wallet1ID,
+				ToWalletID:   wallet2ID,
+				ProductID:    pgtype.Int4{Valid: false},
+				Amount:       amount,
+				Quantity:     pgtype.Int4{Valid: false},
+				TType:        transferType,
+				TStatus:      transactions.TransactionStatusCompleted,
+			},
+			code:      errs.CodeSuccess,
+			isSuccess: true,
+			isErr:     false,
+		}, {
+			desc: "success_failed_insufficient_balance",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: wallet2ID,
+				ToWalletID:   wallet1ID,
+				Amount:       wallet2.Balance + amount + 1,
+				TType:        transferType,
+			},
+			ans: transactions.TransactionHistory{
+				FromWalletID: wallet2ID,
+				ToWalletID:   wallet1ID,
+				ProductID:    pgtype.Int4{Valid: false},
+				Amount:       wallet1.Balance + amount + 1,
+				Quantity:     pgtype.Int4{Valid: false},
+				TType:        transferType,
+				TStatus:      failedStatus,
+			},
+			code:      errs.CodeFailedUser,
+			isSuccess: true,
+			isErr:     true,
+		}, {
+			desc: "error_not_found_from_wallet",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID + 5, Valid: true},
+				ToWalletID:   wallet2ID,
+				Amount:       wallet1.Balance + amount,
+				TType:        transferType,
+			},
+			code:      errs.CodeFailedUser,
+			isSuccess: false,
+			isErr:     true,
+		}, {
+			desc: "error_not_found_to_wallet",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: wallet1ID,
+				ToWalletID:   pgtype.Int4{Int32: wallet2.ID + 5, Valid: true},
+				Amount:       wallet1.Balance + amount,
+				TType:        transferType,
+			},
+			code:      errs.CodeFailedUser,
+			isSuccess: false,
+			isErr:     true,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res, code, err := serviceTest.Transfer(tC.arg)
+			assert.Equal(t, tC.code, code)
+			if !tC.isErr {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+
+			if tC.isSuccess {
+				assert.NotZero(t, res.ID)
+				assert.Equal(t, tC.ans.FromWalletID, res.FromWalletID)
+				assert.Equal(t, tC.ans.ToWalletID, res.ToWalletID)
+				assert.Equal(t, tC.ans.ProductID, res.ProductID)
+				assert.Equal(t, tC.ans.Amount, res.Amount)
+				assert.Equal(t, tC.ans.Quantity, res.Quantity)
+				assert.Equal(t, tC.ans.TType, res.TType)
+				assert.Equal(t, tC.ans.TStatus, res.TStatus)
+				assert.False(t, res.CreatedAt.Time.IsZero())
 			}
 		})
 	}
