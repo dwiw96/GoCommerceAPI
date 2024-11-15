@@ -247,3 +247,94 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 		})
 	}
 }
+
+func TestDeposit(t *testing.T) {
+	user1, wallet1, _ := createPreparationTest(t)
+	t.Log("wallet1:", wallet1)
+
+	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
+	toWalletID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
+	amount := generator.RandomInt32(100, 1000)
+	tTypeDeposit := transactions.TransactionTypesDeposit
+
+	testCases := []struct {
+		desc  string
+		arg   transactions.TransactionParams
+		ans   transactions.TransactionHistory
+		code  int
+		err   error
+		isErr bool
+	}{
+		{
+			desc: "success_completed",
+			arg: transactions.TransactionParams{
+				UserID:     userID,
+				ToWalletID: toWalletID,
+				Amount:     amount,
+			},
+			ans: transactions.TransactionHistory{
+				FromWalletID: pgtype.Int4{Valid: false},
+				ToWalletID:   toWalletID,
+				ProductID:    pgtype.Int4{Valid: false},
+				Amount:       amount,
+				Quantity:     pgtype.Int4{Valid: false},
+				TType:        tTypeDeposit,
+				TStatus:      transactions.TransactionStatusCompleted,
+			},
+			code:  errs.CodeSuccess,
+			err:   nil,
+			isErr: false,
+		}, {
+			desc: "failed_negative_amount",
+			arg: transactions.TransactionParams{
+				UserID:     userID,
+				ToWalletID: toWalletID,
+				Amount:     -amount,
+			},
+			code:  errs.CodeFailedUser,
+			err:   errs.ErrLessOrEqualToZero,
+			isErr: true,
+		}, {
+			desc: "failed_invalid_to_wallet_id",
+			arg: transactions.TransactionParams{
+				UserID:     userID,
+				ToWalletID: pgtype.Int4{Int32: wallet1.ID + 5, Valid: true},
+				Amount:     amount,
+			},
+			code:  errs.CodeFailedUser,
+			err:   errs.ErrViolation,
+			isErr: true,
+		}, {
+			desc: "failed_invalid_user_id",
+			arg: transactions.TransactionParams{
+				UserID:     pgtype.Int4{Int32: user1.ID + 5, Valid: true},
+				ToWalletID: toWalletID,
+				Amount:     amount,
+			},
+			code:  errs.CodeFailedUser,
+			err:   errs.ErrViolation,
+			isErr: true,
+		},
+	}
+
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res, code, err := serviceTest.Deposit(tC.arg)
+			assert.Equal(t, tC.code, code)
+			if !tC.isErr {
+				require.NoError(t, err)
+				assert.NotZero(t, res.ID)
+				assert.Equal(t, tC.ans.FromWalletID, res.FromWalletID)
+				assert.Equal(t, tC.ans.ToWalletID, res.ToWalletID)
+				assert.Equal(t, tC.ans.ProductID, res.ProductID)
+				assert.Equal(t, tC.ans.Amount, res.Amount)
+				assert.Equal(t, tC.ans.Quantity, res.Quantity)
+				assert.Equal(t, tC.ans.TType, res.TType)
+				assert.Equal(t, tC.ans.TStatus, res.TStatus)
+				assert.False(t, res.CreatedAt.Time.IsZero())
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}

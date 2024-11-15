@@ -14,7 +14,7 @@ type transactionReq struct {
 	Quantity         int32  `json:"quantity" validate:"number"`
 }
 
-func toPurchaseProductArg(userID int32, input transactionReq) transactions.TransactionParams {
+func toTransactionstArg(userID int32, input transactionReq) transactions.TransactionParams {
 	return transactions.TransactionParams{
 		UserID:       pgtype.Int4{Int32: userID, Valid: true},
 		FromWalletID: pgtype.Int4{Int32: input.FromWalletUserID, Valid: true},
