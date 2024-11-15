@@ -266,11 +266,13 @@ func TestDeposit(t *testing.T) {
 		isErr bool
 	}{
 		{
-			desc: "success_completed",
+			desc: "deposit_success_completed",
 			arg: transactions.TransactionParams{
-				UserID:     userID,
-				ToWalletID: toWalletID,
-				Amount:     amount,
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Valid: false},
+				ToWalletID:   toWalletID,
+				Amount:       amount,
+				TType:        tTypeDeposit,
 			},
 			ans: transactions.TransactionHistory{
 				FromWalletID: pgtype.Int4{Valid: false},
@@ -285,41 +287,80 @@ func TestDeposit(t *testing.T) {
 			err:   nil,
 			isErr: false,
 		}, {
-			desc: "failed_negative_amount",
+			desc: "deposit_failed_negative_amount",
 			arg: transactions.TransactionParams{
-				UserID:     userID,
-				ToWalletID: toWalletID,
-				Amount:     -amount,
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Valid: false},
+				ToWalletID:   toWalletID,
+				Amount:       -amount,
+				TType:        tTypeDeposit,
 			},
 			code:  errs.CodeFailedUser,
 			err:   errs.ErrLessOrEqualToZero,
 			isErr: true,
 		}, {
-			desc: "failed_invalid_to_wallet_id",
+			desc: "deposit_failed_invalid_to_wallet_id",
 			arg: transactions.TransactionParams{
-				UserID:     userID,
-				ToWalletID: pgtype.Int4{Int32: wallet1.ID + 5, Valid: true},
-				Amount:     amount,
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Valid: false},
+				ToWalletID:   pgtype.Int4{Int32: wallet1.ID + 5, Valid: true},
+				Amount:       amount,
+				TType:        tTypeDeposit,
 			},
 			code:  errs.CodeFailedUser,
 			err:   errs.ErrViolation,
 			isErr: true,
 		}, {
-			desc: "failed_invalid_user_id",
+			desc: "deposit_failed_invalid_user_id",
 			arg: transactions.TransactionParams{
-				UserID:     pgtype.Int4{Int32: user1.ID + 5, Valid: true},
-				ToWalletID: toWalletID,
-				Amount:     amount,
+				UserID:       pgtype.Int4{Int32: user1.ID + 5, Valid: true},
+				FromWalletID: pgtype.Int4{Valid: false},
+				ToWalletID:   toWalletID,
+				Amount:       amount,
+				TType:        tTypeDeposit,
 			},
 			code:  errs.CodeFailedUser,
 			err:   errs.ErrViolation,
+			isErr: true,
+		}, {
+			desc: "withdraw_success_completed",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
+				ToWalletID:   pgtype.Int4{Valid: false},
+				Amount:       -amount,
+				TType:        transactions.TransactionTypesWithdrawal,
+			},
+			ans: transactions.TransactionHistory{
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
+				ToWalletID:   pgtype.Int4{Valid: false},
+				ProductID:    pgtype.Int4{Valid: false},
+				Amount:       -amount,
+				Quantity:     pgtype.Int4{Valid: false},
+				TType:        transactions.TransactionTypesWithdrawal,
+				TStatus:      transactions.TransactionStatusCompleted,
+			},
+			code:  errs.CodeSuccess,
+			err:   nil,
+			isErr: false,
+		}, {
+			desc: "withdraw_failed_positive_amount",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
+				ToWalletID:   pgtype.Int4{Valid: false},
+				Amount:       amount,
+				TType:        transactions.TransactionTypesWithdrawal,
+			},
+			code:  errs.CodeFailedUser,
+			err:   errs.ErrGreaterOrEqualToZero,
 			isErr: true,
 		},
 	}
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			res, code, err := serviceTest.Deposit(tC.arg)
+			res, code, err := serviceTest.DepositOrWithdraw(tC.arg)
 			assert.Equal(t, tC.code, code)
 			if !tC.isErr {
 				require.NoError(t, err)

@@ -216,7 +216,7 @@ func (t *transactionsRepository) TransactionPurchaseProduct(arg transactions.Tra
 	return res, errUpdateStatus
 }
 
-func (r *transactionsRepository) TransactionDeposit(arg transactions.TransactionParams) (*transactions.TransactionHistory, error) {
+func (r *transactionsRepository) TransactionDepositOrWithdraw(arg transactions.TransactionParams) (*transactions.TransactionHistory, error) {
 	var (
 		res *transactions.TransactionHistory
 		err error
@@ -224,10 +224,11 @@ func (r *transactionsRepository) TransactionDeposit(arg transactions.Transaction
 
 	// create transaction history with 'pending' status
 	createTransactionArg := transactions.CreateTransactionParams{
-		ToWalletID: arg.ToWalletID,
-		Amount:     arg.Amount,
-		TType:      transactions.TransactionTypesDeposit,
-		TStatus:    transactions.TransactionStatusPending,
+		FromWalletID: arg.FromWalletID,
+		ToWalletID:   arg.ToWalletID,
+		Amount:       arg.Amount,
+		TType:        arg.TType,
+		TStatus:      transactions.TransactionStatusPending,
 	}
 	res, err = r.CreateTransaction(createTransactionArg)
 	if err != nil {

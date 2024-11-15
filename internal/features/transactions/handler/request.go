@@ -6,7 +6,7 @@ import (
 )
 
 type transactionReq struct {
-	TransactionType  string `json:"transaction_type" validate:"required,oneof=purchase transfer deposit withdraw"`
+	TransactionType  string `json:"transaction_type" validate:"required,oneof=purchase transfer deposit withdrawal"`
 	FromWalletUserID int32  `json:"from_wallet_id" validate:"number"`
 	ToWalletUserID   int32  `json:"to_wallet_id" validate:"number"`
 	ProductID        int32  `json:"product_id"`
@@ -22,5 +22,6 @@ func toTransactionstArg(userID int32, input transactionReq) transactions.Transac
 		Amount:       input.Amount,
 		ProductID:    pgtype.Int4{Int32: input.ProductID, Valid: true},
 		Quantity:     pgtype.Int4{Int32: input.Quantity, Valid: true},
+		TType:        transactions.TransactionTypes(input.TransactionType),
 	}
 }
