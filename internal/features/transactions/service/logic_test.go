@@ -132,12 +132,13 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 	t.Log("QUANTITIY:", quantity)
 
 	testCases := []struct {
-		desc  string
-		arg   transactions.TransactionParams
-		ans   transactions.TransactionHistory
-		code  int
-		err   error
-		isErr bool
+		desc      string
+		arg       transactions.TransactionParams
+		ans       transactions.TransactionHistory
+		code      int
+		err       error
+		isErr     bool
+		isSuccess bool
 	}{
 		{
 			desc: "success_completed",
@@ -157,9 +158,10 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 				TType:        transactions.TransactionTypesPurchase,
 				TStatus:      transactions.TransactionStatusCompleted,
 			},
-			code:  errs.CodeSuccess,
-			err:   nil,
-			isErr: false,
+			code:      errs.CodeSuccess,
+			err:       nil,
+			isErr:     false,
+			isSuccess: true,
 		}, {
 			desc: "success_failed_insufficient_stock",
 			arg: transactions.TransactionParams{
@@ -178,9 +180,10 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 				TType:        transactions.TransactionTypesPurchase,
 				TStatus:      transactions.TransactionStatusFailed,
 			},
-			code:  errs.CodeSuccess,
-			err:   nil,
-			isErr: false,
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrInsufficientStock,
+			isErr:     true,
+			isSuccess: true,
 		}, {
 			desc: "success_failed_insufficient_balance",
 			arg: transactions.TransactionParams{
@@ -199,9 +202,10 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 				TType:        transactions.TransactionTypesPurchase,
 				TStatus:      transactions.TransactionStatusFailed,
 			},
-			code:  errs.CodeSuccess,
-			err:   nil,
-			isErr: false,
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrInsufficientBalance,
+			isErr:     true,
+			isSuccess: true,
 		}, {
 			desc: "failed_wrong_from_wallet_id",
 			arg: transactions.TransactionParams{
@@ -210,9 +214,10 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 				Quantity:     quantity,
 				TType:        tTypePurchase,
 			},
-			code:  errs.CodeFailedUser,
-			err:   errs.ErrCheckConstraint,
-			isErr: true,
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrCheckConstraint,
+			isErr:     true,
+			isSuccess: false,
 		}, {
 			desc: "failed_wrong_product_id",
 			arg: transactions.TransactionParams{
@@ -221,9 +226,10 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 				Quantity:     quantity,
 				TType:        tTypePurchase,
 			},
-			code:  errs.CodeFailedUser,
-			err:   errs.ErrCheckConstraint,
-			isErr: true,
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrCheckConstraint,
+			isErr:     true,
+			isSuccess: false,
 		},
 	}
 	for _, tC := range testCases {
@@ -232,6 +238,11 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 			assert.Equal(t, tC.code, code)
 			if !tC.isErr {
 				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+
+			if tC.isSuccess {
 				assert.NotZero(t, res.ID)
 				assert.Equal(t, tC.ans.FromWalletID, res.FromWalletID)
 				assert.Equal(t, tC.ans.ToWalletID, res.ToWalletID)
@@ -241,8 +252,6 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 				assert.Equal(t, tC.ans.TType, res.TType)
 				assert.Equal(t, tC.ans.TStatus, res.TStatus)
 				assert.False(t, res.CreatedAt.Time.IsZero())
-			} else {
-				require.Error(t, err)
 			}
 		})
 	}
@@ -258,12 +267,13 @@ func TestDepositAndWithdraw(t *testing.T) {
 	tTypeDeposit := transactions.TransactionTypesDeposit
 
 	testCases := []struct {
-		desc  string
-		arg   transactions.TransactionParams
-		ans   transactions.TransactionHistory
-		code  int
-		err   error
-		isErr bool
+		desc      string
+		arg       transactions.TransactionParams
+		ans       transactions.TransactionHistory
+		code      int
+		err       error
+		isErr     bool
+		isSuccess bool
 	}{
 		{
 			desc: "deposit_success_completed",
@@ -283,9 +293,10 @@ func TestDepositAndWithdraw(t *testing.T) {
 				TType:        tTypeDeposit,
 				TStatus:      transactions.TransactionStatusCompleted,
 			},
-			code:  errs.CodeSuccess,
-			err:   nil,
-			isErr: false,
+			code:      errs.CodeSuccess,
+			err:       nil,
+			isErr:     false,
+			isSuccess: true,
 		}, {
 			desc: "deposit_failed_negative_amount",
 			arg: transactions.TransactionParams{
@@ -295,9 +306,10 @@ func TestDepositAndWithdraw(t *testing.T) {
 				Amount:       -amount,
 				TType:        tTypeDeposit,
 			},
-			code:  errs.CodeFailedUser,
-			err:   errs.ErrLessOrEqualToZero,
-			isErr: true,
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrLessOrEqualToZero,
+			isErr:     true,
+			isSuccess: false,
 		}, {
 			desc: "deposit_failed_invalid_to_wallet_id",
 			arg: transactions.TransactionParams{
@@ -307,9 +319,10 @@ func TestDepositAndWithdraw(t *testing.T) {
 				Amount:       amount,
 				TType:        tTypeDeposit,
 			},
-			code:  errs.CodeFailedUser,
-			err:   errs.ErrViolation,
-			isErr: true,
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrViolation,
+			isErr:     true,
+			isSuccess: false,
 		}, {
 			desc: "deposit_failed_invalid_user_id",
 			arg: transactions.TransactionParams{
@@ -319,16 +332,17 @@ func TestDepositAndWithdraw(t *testing.T) {
 				Amount:       amount,
 				TType:        tTypeDeposit,
 			},
-			code:  errs.CodeFailedUser,
-			err:   errs.ErrViolation,
-			isErr: true,
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrViolation,
+			isErr:     true,
+			isSuccess: false,
 		}, {
 			desc: "withdraw_success_completed",
 			arg: transactions.TransactionParams{
 				UserID:       userID,
 				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
 				ToWalletID:   pgtype.Int4{Valid: false},
-				Amount:       -amount,
+				Amount:       amount,
 				TType:        transactions.TransactionTypesWithdrawal,
 			},
 			ans: transactions.TransactionHistory{
@@ -340,21 +354,45 @@ func TestDepositAndWithdraw(t *testing.T) {
 				TType:        transactions.TransactionTypesWithdrawal,
 				TStatus:      transactions.TransactionStatusCompleted,
 			},
-			code:  errs.CodeSuccess,
-			err:   nil,
-			isErr: false,
+			code:      errs.CodeSuccess,
+			err:       nil,
+			isErr:     false,
+			isSuccess: true,
 		}, {
-			desc: "withdraw_failed_positive_amount",
+			desc: "withdraw_success_failed_insufficient_balance",
 			arg: transactions.TransactionParams{
 				UserID:       userID,
 				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
 				ToWalletID:   pgtype.Int4{Valid: false},
-				Amount:       amount,
+				Amount:       wallet1.Balance + amount,
 				TType:        transactions.TransactionTypesWithdrawal,
 			},
-			code:  errs.CodeFailedUser,
-			err:   errs.ErrGreaterOrEqualToZero,
-			isErr: true,
+			ans: transactions.TransactionHistory{
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
+				ToWalletID:   pgtype.Int4{Valid: false},
+				ProductID:    pgtype.Int4{Valid: false},
+				Amount:       -(wallet1.Balance + amount),
+				Quantity:     pgtype.Int4{Valid: false},
+				TType:        transactions.TransactionTypesWithdrawal,
+				TStatus:      transactions.TransactionStatusFailed,
+			},
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrInsufficientBalance,
+			isErr:     true,
+			isSuccess: true,
+		}, {
+			desc: "withdraw_failed_negative_amount",
+			arg: transactions.TransactionParams{
+				UserID:       userID,
+				FromWalletID: pgtype.Int4{Int32: wallet1.ID, Valid: true},
+				ToWalletID:   pgtype.Int4{Valid: false},
+				Amount:       -amount,
+				TType:        transactions.TransactionTypesWithdrawal,
+			},
+			code:      errs.CodeFailedUser,
+			err:       errs.ErrLessOrEqualToZero,
+			isErr:     true,
+			isSuccess: false,
 		},
 	}
 

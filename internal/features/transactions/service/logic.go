@@ -40,10 +40,10 @@ func handleError(arg error) (code int, err error) {
 			return errs.CodeFailedDuplicated, errs.ErrDuplicate
 		case "23514": // CHECK violation
 			if pgErr.ConstraintName == "ck_wallets_balance" {
-				return errs.CodeFailedUser, fmt.Errorf("balance is insufficient")
+				return errs.CodeFailedUser, errs.ErrInsufficientBalance
 			}
 			if pgErr.ConstraintName == "ck_products_availability" {
-				return errs.CodeFailedUser, fmt.Errorf("product stock is insufficient")
+				return errs.CodeFailedUser, errs.ErrInsufficientStock
 			}
 			return errs.CodeFailedUser, errs.ErrCheckConstraint
 		case "23502": // NOT NULL violation
@@ -75,16 +75,14 @@ func (s *transactionsService) PurchaseProduct(arg transactions.TransactionParams
 }
 
 func (s *transactionsService) DepositOrWithdraw(arg transactions.TransactionParams) (res *transactions.TransactionHistory, code int, err error) {
+	if arg.Amount <= int32(0) {
+		return nil, errs.CodeFailedUser, errs.ErrLessOrEqualToZero
+	}
 	if arg.TType == transactions.TransactionTypesDeposit {
-		if arg.Amount <= int32(0) {
-			return nil, errs.CodeFailedUser, errs.ErrLessOrEqualToZero
-		}
 		arg.FromWalletID.Valid = false
 	}
 	if arg.TType == transactions.TransactionTypesWithdrawal {
-		if arg.Amount >= int32(0) {
-			return nil, errs.CodeFailedUser, errs.ErrGreaterOrEqualToZero
-		}
+		arg.Amount *= -1
 		arg.ToWalletID.Valid = false
 	}
 
