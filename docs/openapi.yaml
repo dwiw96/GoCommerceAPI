@@ -1032,6 +1032,128 @@ paths:
                     error_message: Unprocessable Entity
                     execute_at: 2024/11/04 20:50:08.938
                     result: failure
+  /api/v1/transactions:
+    post:
+      summary: transactions feature
+      description: transaction for deposit, withdraw, transfer and purchase product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                transaction_type:
+                  type: string
+                  enum:
+                    - deposit
+                    - withdrawal
+                    - purchase
+                    - transfer
+                from_wallet_id:
+                  type: integer
+                to_wallet_id:
+                  type: integer
+                amount:
+                  type: integer
+                product_id:
+                  type: integer
+                quantity:
+                  type: integer
+              required:
+                - transaction_type
+            examples:
+              puchase product:
+                description: purchase product
+                value:
+                  transaction_type: purchase
+                  from_wallet_id: 1
+                  product_id: 1
+                  quantity: 7
+              deposit:
+                description: deposit to user wallet
+                value:
+                  transaction_type: deposit
+                  to_wallet_id: 1
+                  amount: 500
+              withdrawal:
+                description: withdraw from user wallet balance
+                value:
+                  transaction_type: withdrawal
+                  from_wallet_id: 1
+                  amount: 500
+              transfer:
+                description: transfer balance from wallet to wallet
+                value:
+                  transaction_type: transfer
+                  from_wallet_id: 1
+                  to_wallet_id: 3
+                  amount: 1500
+      responses:
+        "200":
+          description: Success to deposit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResponseTransaction"
+              examples:
+                '[purchase] completed':
+                  $ref: "#/components/examples/purchase_200 completed"
+
+                '[deposit] completed':
+                  $ref: "#/components/examples/deposit_200 completed"
+
+                '[withdraw] completed':
+                  $ref: "#/components/examples/withdrawal_200 Completed"
+                
+                '[transfer] completed':
+                  $ref: "#/components/examples/transfer_200 Completed"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#components/schemas/error"
+              examples:
+                '[purchase] insufficient stock':
+                  $ref: "#/components/examples/purchase_400 insufficient stock"
+                '[purchase] insufficient balance':
+                  $ref: "#/components/examples/purchase_400 insufficient balance"
+                '[purchase] no product found':
+                  $ref: "#/components/examples/purchase_400 no product found"
+                '[purchase] quantity 0':
+                  $ref: "#/components/examples/purchase_400 quantity 0"
+
+                '[deposit] negative amount':
+                  $ref: "#/components/examples/deposit_400 negative amount"
+                
+                '[withdraw] insufficient balance':
+                  $ref: "#/components/examples/withdrawal_400 Insufficient Balance"
+                '[withdraw] invalid from_wallet_id':
+                  $ref: "#/components/examples/withdrawal_400 Invalid From Wallet ID"
+                '[withdraw] negative amount':
+                  $ref: "#/components/examples/withdrawal_400 Negative Amount"
+                
+                '[transfer] insufficient balance':
+                  $ref: "#/components/examples/transfer_400 Insufficient Balance"
+                '[transfer] not found from_wallet_id':
+                  $ref: "#/components/examples/transfer_400 Not Found From Wallet ID"
+                '[transfer] not found to_wallet_id':
+                  $ref: "#/components/examples/transfer_400 Not Found To Wallet ID"
+        "422":
+          description: Unprocessably Entity, invalid url param
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+              examples:
+                '[purchase] wrong transaction type':
+                  $ref: "#/components/examples/purchase_422 wrong transaction type"
+
+                '[deposit] without transaction_type':
+                  $ref: "#/components/examples/deposit_422 no transaction type"
 
 components:
   securitySchemes:
@@ -1136,6 +1258,25 @@ components:
           type: string
         updated_at:
           type: string
+    TransactionHistory:
+      type: object
+      properties:
+        from_wallet_id:
+          type: integer
+        to_wallet_id:
+          type: integer
+        product_id:
+          type: integer
+        quantity:
+          type: integer
+        amount:
+          type: integer
+        transaction_type:
+          type: string
+        transaction_status:
+          type: string
+        created_at:
+          type: string
 
     ResponseWithTokens:
       allOf:
@@ -1189,3 +1330,200 @@ components:
             value:
               $ref: '#components/schemas/Wallet'
     
+    ResponseTransaction:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            value:
+              $ref: '#components/schemas/TransactionHistory'
+  
+  examples:
+    purchase_200 completed:
+      value:
+        description: success
+        error_message: 
+        execute_at: 2024/11/14 19:00:09.108
+        result: success
+        value: 
+            from_wallet_id: 1
+            to_wallet_id: 0
+            product_id: 1
+            quantity: 7
+            amount: 2730
+            transaction_type: purchase
+            transaction_status: completed
+            created_at: '2024-11-14T10:00:09.044353Z'
+    purchase_422 wrong transaction type:
+      value:
+        description: 
+        - TransactionType must be one of [purchase transfer deposit withdraw]
+        error_message: Unprocessable Entity
+        execute_at: 2024/11/14 18:59:20.644
+        result: failure
+    purchase_400 insufficient stock:
+      value:
+        description: failed
+        error_message: product stock is insufficient
+        execute_at: 2024/11/15 00:05:16.038
+        result: success
+        value: 
+            from_wallet_id: 1
+            to_wallet_id: 0
+            product_id: 8
+            quantity: 22
+            amount: 7018
+            transaction_type: purchase
+            transaction_status: failed
+            created_at: 2024-11-14T15:05:15.955494
+    purchase_400 insufficient balance:
+      value:
+        description: failed
+        error_message: balance is insufficient
+        execute_at: 2024/11/15 00:07:02.495
+        result: success
+        value: 
+            from_wallet_id: 1
+            to_wallet_id: 0
+            product_id: 8
+            quantity: 15
+            amount: 4785
+            transaction_type: purchase
+            transaction_status: failed
+            created_at: 2024-11-14T15:07:02.428514
+    purchase_400 no product found:
+      value:
+        description:
+        - no data found
+        error_message: Bad Request
+        execute_at: 2024/11/15 00:21:23.787
+        result: failure
+    purchase_400 quantity 0:
+      value:
+        description: 
+        - quantity must be more than 0
+        error_message: Bad Request
+        execute_at: 2024/11/15 00:25:01.274
+        result: failure
+
+    deposit_200 completed:
+      description: completed status
+      value:
+        description: success
+        error_message: 
+        execute_at: 2024/11/15 19:58:48.256
+        result: success
+        value:
+            from_wallet_id: 0
+            to_wallet_id: 1
+            product_id: 0
+            quantity: 0
+            amount: 230
+            transaction_type: deposit
+            transaction_status: completed
+            created_at: 2024-11-15T10:58:48.097663Z
+    deposit_400 negative amount:
+      value:
+        description:
+        - amount must be more than 0
+        error_message: Bad Request
+        execute_at: 2024/11/15 19:59:53.772
+        result: failure
+    deposit_422 no transaction type:
+      value:
+        description: 
+        - TransactionType is a required field
+        error_message: Unprocessable Entity
+        execute_at: 2024/11/15 19:57:57.214
+        result: failure
+  
+    withdrawal_200 Completed:
+      value:
+        description: success
+        error_message: 
+        execute_at: 2024/11/16 09:23:25.725
+        result: success
+        value: 
+            from_wallet_id: 1
+            to_wallet_id: 0
+            product_id: 0
+            quantity: 0
+            amount: -500
+            transaction_type: withdrawal
+            transaction_status: completed
+            created_at: 2024-11-16T00:23:25.668697Z
+    withdrawal_400 Invalid From Wallet ID:
+      value:
+        description:
+        - invalid input
+        error_message: Bad Request
+        execute_at: 2024/11/15 23:05:34.473
+        result: failure
+    withdrawal_400 Negative Amount:
+      value:
+        description:
+        - amount must be more than 0
+        error_message: Bad Request
+        execute_at: 2024/11/16 09:22:53.112
+        result: failure
+    withdrawal_400 Insufficient Balance:
+      value:
+        description: failed
+        error_message: balance is insufficient
+        execute_at: 2024/11/16 10:01:48.812
+        result: success
+        value:
+          from_wallet_id: 1
+          to_wallet_id: 0
+          product_id: 0
+          quantity: 0
+          amount: -1001
+          transaction_type: withdrawal
+          transaction_status: failed
+          created_at: 2024-11-16T01:01:48.715096Z
+
+    transfer_200 Completed:
+      value:
+        description: success
+        error_message: 
+        execute_at: 2024/11/16 08:34:45.578
+        result: success
+        value: 
+          from_wallet_id: 2
+          to_wallet_id: 1
+          product_id: 0
+          quantity: 0
+          amount: 1500
+          transaction_type: transfer
+          transaction_status: completed
+          created_at: 2024-11-15T23:34:45.522147Z
+    transfer_400 Insufficient Balance:
+      value:
+        description: failed
+        error_message: balance is insufficient
+        execute_at: 2024/11/16 08:35:15.279
+        result: success
+        value: 
+          from_wallet_id: 1
+          to_wallet_id: 2
+          product_id: 0
+          quantity: 0
+          amount: 1501
+          transaction_type: transfer
+          transaction_status: failed
+          created_at: 2024-11-15T23:35:15.236547Z
+    transfer_400 Not Found From Wallet ID:
+      value:
+        description:
+        - invalid input
+        error_message: Bad Request
+        execute_at: 2024/11/16 08:36:16.563
+        result: failure
+    transfer_400 Not Found To Wallet ID:
+      value:
+        description:
+        - invalid input
+        error_message: Bad Request
+        execute_at: 2024/11/16 08:36:37.601
+        result: failure
+  
