@@ -67,6 +67,17 @@ AND (
 -- name: DeleteProduct :exec
 DELETE FROM products WHERE id = $1;
 
+-- name: UpdateProductAvailability :one
+UPDATE 
+    products
+SET 
+    availability = coalesce(availability + ($1), availability)
+WHERE 
+    id = $2
+AND 
+    $1::INT IS NOT NULL AND (availability + $1) >= 0
+RETURNING id, name, description, price, availability;
+
 -- name: CreateWallet :one
 INSERT INTO wallets(
     user_id,
@@ -94,3 +105,87 @@ RETURNING *;
 
 -- name: DeleteWallet :exec
 DELETE FROM wallets WHERE id = $1;
+
+
+-- name: CreateTransaction :one
+INSERT INTO 
+    transaction_histories(
+        from_wallet_id,
+        to_wallet_id,
+        product_id,
+        amount,
+        quantity,
+        t_type,
+        t_status
+    )
+VALUES (
+    $1, $2, $3, $4, $5, $6, $7
+) RETURNING *;
+
+-- name: UpdateTransactionStatus :one
+UPDATE
+    transaction_histories
+SET
+    t_status = $1
+WHERE 
+    id = $2
+RETURNING *;
+
+-- name: TransactionToWallet :exec
+BEGIN;
+UPDATE 
+    wallets
+SET 
+    balance = balance + $1,
+    updated_at = NOW()
+WHERE
+    user_id = $2;
+
+UPDATE 
+    wallets
+SET 
+    balance = balance - $1,
+    updated_at = NOW()
+WHERE
+    user_id = $3;
+
+INSERT INTO  transaction_histories(
+    from_user_id,
+    to_wallet_id,
+    product_id,
+    amount,
+    quantity
+) VALUES (
+    $2, $3, $4, $1, $5
+);
+COMMIT;
+
+-- name: PurchaseProduct :exec
+BEGIN;
+UPDATE 
+    wallets
+SET 
+    balance = balance - $1,
+    updated_at = NOW()
+WHERE
+    user_id = $2;
+
+UPDATE 
+    products
+SET 
+    availability = availability - $3
+WHERE 
+    id = $4;
+
+INSERT INTO 
+    transaction_histories(
+        from_user_id,
+        to_wallet_id,
+        product_id,
+        amount,
+        quantity
+    )
+VALUES (
+    $2, $3, $4, $1, $5
+);
+COMMIT;

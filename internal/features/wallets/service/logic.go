@@ -74,7 +74,7 @@ func (s *walletsService) DepositToWallet(arg wallets.UpdateWalletParams) (res *w
 		return nil, errs.CodeFailedUser, errs.ErrInvalidInput
 	}
 
-	res, err = s.repo.UpdateWallet(arg)
+	res, err = s.repo.UpdateWalletByUserID(arg)
 	if err != nil {
 		code, err = handleError(err)
 		return nil, code, err
@@ -89,7 +89,7 @@ func (s *walletsService) WithdrawFromWallet(arg wallets.UpdateWalletParams) (res
 		return nil, errs.CodeFailedUser, errs.ErrInvalidInput
 	}
 
-	res, err = s.repo.UpdateWallet(arg)
+	res, err = s.repo.UpdateWalletByUserID(arg)
 	if err != nil {
 		code, err = handleError(err)
 		return nil, code, err

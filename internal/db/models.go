@@ -54,47 +54,48 @@ func (ns NullTransactionStatus) Value() (driver.Value, error) {
 	return string(ns.TransactionStatus), nil
 }
 
-type TransactionType string
+type TransactionTypes string
 
 const (
-	TransactionTypePurchase   TransactionType = "purchase"
-	TransactionTypeDeposit    TransactionType = "deposit"
-	TransactionTypeWithdrawal TransactionType = "withdrawal"
+	TransactionTypesPurchase   TransactionTypes = "purchase"
+	TransactionTypesDeposit    TransactionTypes = "deposit"
+	TransactionTypesWithdrawal TransactionTypes = "withdrawal"
+	TransactionTypesTransfer   TransactionTypes = "transfer"
 )
 
-func (e *TransactionType) Scan(src interface{}) error {
+func (e *TransactionTypes) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = TransactionType(s)
+		*e = TransactionTypes(s)
 	case string:
-		*e = TransactionType(s)
+		*e = TransactionTypes(s)
 	default:
-		return fmt.Errorf("unsupported scan type for TransactionType: %T", src)
+		return fmt.Errorf("unsupported scan type for TransactionTypes: %T", src)
 	}
 	return nil
 }
 
-type NullTransactionType struct {
-	TransactionType TransactionType
-	Valid           bool // Valid is true if TransactionType is not NULL
+type NullTransactionTypes struct {
+	TransactionTypes TransactionTypes
+	Valid            bool // Valid is true if TransactionTypes is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullTransactionType) Scan(value interface{}) error {
+func (ns *NullTransactionTypes) Scan(value interface{}) error {
 	if value == nil {
-		ns.TransactionType, ns.Valid = "", false
+		ns.TransactionTypes, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.TransactionType.Scan(value)
+	return ns.TransactionTypes.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullTransactionType) Value() (driver.Value, error) {
+func (ns NullTransactionTypes) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.TransactionType), nil
+	return string(ns.TransactionTypes), nil
 }
 
 type Product struct {
@@ -117,13 +118,14 @@ type SecM struct {
 	PrivateKey []byte
 }
 
-type TransactionsHistory struct {
+type TransactionHistory struct {
 	ID           int32
-	FromWalletID int32
+	FromWalletID pgtype.Int4
 	ToWalletID   pgtype.Int4
-	ProductID    int32
+	ProductID    pgtype.Int4
 	Amount       int32
-	TType        TransactionType
+	Quantity     pgtype.Int4
+	TType        TransactionTypes
 	TStatus      TransactionStatus
 	CreatedAt    pgtype.Timestamp
 }
