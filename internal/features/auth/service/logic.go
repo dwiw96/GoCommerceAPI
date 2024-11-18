@@ -126,7 +126,6 @@ func (s *authService) LogOut(payload auth.JwtPayload) error {
 }
 
 func (s *authService) DeleteUser(arg auth.DeleteUserParams) (code int, err error) {
-	fmt.Println("arg:", arg)
 	err = s.repo.DeleteAllUserInformation(s.ctx, arg)
 	if err != nil {
 		return errorHandler.CodeFailedUser, err
@@ -190,9 +189,7 @@ func (s *authService) validateRefreshToken(arg *auth.RefreshTokenWhitelist, errI
 	if arg.RefreshToken == uuid.Nil {
 		return fmt.Errorf("invalid refresh token")
 	}
-	fmt.Println("sexp:", arg.ExpiresAt)
-	fmt.Println("now:", time.Now().UTC())
-	fmt.Println("is now > exp:", time.Now().UTC().After(arg.ExpiresAt))
+
 	if time.Now().UTC().After(arg.ExpiresAt) {
 		err = s.repo.DeleteRefreshToken(s.ctx, arg.UserID)
 		if err != nil {
