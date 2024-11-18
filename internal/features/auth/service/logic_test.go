@@ -16,7 +16,9 @@ import (
 	rd "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/redis"
 	middleware "github.com/dwiw96/vocagame-technical-test-backend/pkg/middleware"
 	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	errs "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,6 +82,15 @@ func createUser(t *testing.T) (user *auth.User, token string, signupReq auth.Sig
 	assert.NotEmpty(t, token)
 
 	return res, token, input
+}
+
+func insertRefreshTokenTest(t *testing.T, userID int32) uuid.UUID {
+	refreshToken, err := uuid.NewRandom()
+	require.NoError(t, err)
+	err = repoTest.InsertRefreshToken(ctx, userID, refreshToken)
+	require.NoError(t, err)
+
+	return refreshToken
 }
 
 func TestSignUp(t *testing.T) {
@@ -247,12 +258,14 @@ func TestDeleteUser(t *testing.T) {
 	var users []auth.User
 	for i := 0; i < 5; i++ {
 		user, _, _ := createUser(t)
+		insertRefreshTokenTest(t, user.ID)
 		users = append(users, *user)
 	}
 
 	testCases := []struct {
 		desc string
 		arg  auth.DeleteUserParams
+		code int
 		err  bool
 	}{
 		{
@@ -261,46 +274,52 @@ func TestDeleteUser(t *testing.T) {
 				ID:    users[0].ID,
 				Email: users[0].Email,
 			},
-			err: false,
+			code: errs.CodeSuccess,
+			err:  false,
 		}, {
 			desc: "success",
 			arg: auth.DeleteUserParams{
 				ID:    users[1].ID,
 				Email: users[1].Email,
 			},
-			err: false,
+			code: errs.CodeSuccess,
+			err:  false,
 		}, {
 			desc: "success",
 			arg: auth.DeleteUserParams{
 				ID:    users[2].ID,
 				Email: users[2].Email,
 			},
-			err: false,
+			code: errs.CodeSuccess,
+			err:  false,
 		}, {
 			desc: "failed_wrong_id",
 			arg: auth.DeleteUserParams{
 				ID:    users[3].ID + 5,
 				Email: users[3].Email,
 			},
-			err: true,
+			code: errs.CodeFailedUser,
+			err:  true,
 		}, {
 			desc: "failed_wrong_email",
 			arg: auth.DeleteUserParams{
 				ID:    users[4].ID,
 				Email: "a" + users[4].Email,
 			},
-			err: true,
+
+			code: errs.CodeFailedUser,
+			err:  true,
 		},
 	}
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
+			t.Log(tC.arg)
 			code, err := serviceTest.DeleteUser(tC.arg)
+			assert.Equal(t, tC.code, code)
 			if !tC.err {
-				require.Equal(t, 200, code)
 				require.NoError(t, err)
 			} else {
-				require.NotEqual(t, 200, code)
 				require.Error(t, err)
 			}
 		})
