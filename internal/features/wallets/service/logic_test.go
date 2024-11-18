@@ -73,7 +73,7 @@ func createWalletTest(t *testing.T) (input wallets.CreateWalletParams, res *wall
 
 	res, code, err := serviceTest.CreateWallet(arg)
 	require.NoError(t, err)
-	assert.Equal(t, errs.CodeSuccess, code)
+	assert.Equal(t, errs.CodeSuccessCreate, code)
 	assert.NotZero(t, res.ID)
 	assert.Equal(t, user.ID, res.UserID)
 	assert.Equal(t, arg.Balance, res.Balance)
@@ -100,7 +100,7 @@ func TestCreateWallet(t *testing.T) {
 				UserID:  user.ID,
 				Balance: int32(generator.RandomInt(0, 50)),
 			},
-			code:  errs.CodeSuccess,
+			code:  errs.CodeSuccessCreate,
 			err:   nil,
 			isErr: false,
 		}, {
@@ -136,7 +136,7 @@ func TestCreateWallet(t *testing.T) {
 				Balance: int32(generator.RandomInt(-5000, -1)),
 			},
 			code:  errs.CodeFailedUser,
-			err:   errs.ErrCheckConstraint,
+			err:   errs.ErrBalanceLessThanZero,
 			isErr: true,
 		},
 	}
