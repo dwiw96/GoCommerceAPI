@@ -31,7 +31,7 @@ func handleError(err error) (code int, errRes error) {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		if pgErr.ConstraintName == "ck_wallets_balance" {
-			return errs.CodeFailedUser, fmt.Errorf("balance minimum is 0")
+			return errs.CodeFailedUser, errs.ErrBalanceLessThanZero
 		}
 		switch pgErr.Code {
 		case "23505": // UNIQUE violation

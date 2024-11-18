@@ -25,4 +25,5 @@ var (
 	ErrLessOrEqualToZero   = errors.New("amount must be more than 0")    // amount must be more than 0
 	ErrInsufficientBalance = errors.New("balance is insufficient")       // balance is insufficient
 	ErrInsufficientStock   = errors.New("product stock is insufficient") // product stock is insufficient
+	ErrBalanceLessThanZero = errors.New("balance minimum is 0")          // balance minimum is 0
 )
