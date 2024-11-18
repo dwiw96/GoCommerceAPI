@@ -25,10 +25,8 @@ func NewAuthCache(client *redis.Client, ctx context.Context) auth.ICache {
 func (c *authCache) CachingBlockedToken(payload auth.JwtPayload) error {
 	now := time.Now().UTC()
 	exp := time.Unix(payload.Exp, 0)
-	fmt.Println("now:", now)
-	fmt.Println("exp:", exp)
+
 	duration := time.Duration(exp.Sub(now).Nanoseconds())
-	fmt.Println("ttl duration:", duration)
 	if duration <= 0 {
 		return nil
 	}
