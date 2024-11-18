@@ -33,12 +33,12 @@ var (
 
 func TestMain(m *testing.M) {
 	os.Setenv("DB_USERNAME", "dwiw")
-	os.Setenv("DB_PASSWORD", "vocagame")
+	os.Setenv("DB_PASSWORD", "secret")
 	os.Setenv("DB_HOST", "localhost")
 	os.Setenv("DB_PORT", "5432")
 	os.Setenv("DB_NAME", "technical_test")
 	os.Setenv("REDIS_HOST", "localhost:6379")
-	os.Setenv("REDIS_PASSWORD", "vocagame")
+	os.Setenv("REDIS_PASSWORD", "")
 	os.Setenv("REDIS_DB", "0")
 
 	redis_db, err := conv.ConvertStrToInt(os.Getenv("REDIS_DB"))
