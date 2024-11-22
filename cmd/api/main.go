@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	log.Println("-- run vocagame technical test --")
+	log.Println("-- run GoCommerceAPI --")
 	env := cfg.GetEnvConfig()
 	pgPool := pg.ConnectToPg(env)
 	defer pgPool.Close()

@@ -15,7 +15,7 @@ import (
 
 func TestConnectToRedis(t *testing.T) {
 	os.Setenv("REDIS_HOST", "localhost:6379")
-	os.Setenv("REDIS_PASSWORD", "vocagame")
+	os.Setenv("REDIS_PASSWORD", "")
 	os.Setenv("REDIS_DB", "0")
 
 	redis_db, err := conv.ConvertStrToInt(os.Getenv("REDIS_DB"))
