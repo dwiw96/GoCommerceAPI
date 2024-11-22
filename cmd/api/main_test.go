@@ -1,21 +1,18 @@
 package main
 
 import (
-	"context"
 	"os"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
 	password "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/password"
+	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
 )
 
 func TestMain(m *testing.M) {
-	env := cfg.GetEnvConfig()
-	pgPool := pg.ConnectToPg(env)
-	defer pgPool.Close()
+	pgPool := testUtils.GetPool()
+	defer testUtils.ClosePool()
 
-	ctx := context.Background()
+	ctx := testUtils.GetContext()
 	defer ctx.Done()
 
 	password.JwtInit(pgPool, ctx)
