@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	transactions "github.com/dwiw96/vocagame-technical-test-backend/internal/features/transactions"
-	errs "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	transactions "github.com/dwiw96/GoCommerceAPI/internal/features/transactions"
+	errs "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
-	errs "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	wallets "github.com/dwiw96/GoCommerceAPI/internal/features/wallets"
+	errs "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"

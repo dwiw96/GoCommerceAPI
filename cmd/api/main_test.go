@@ -4,8 +4,8 @@ import (
 	"os"
 	"testing"
 
-	password "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/password"
-	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
+	password "github.com/dwiw96/GoCommerceAPI/pkg/utils/password"
+	testUtils "github.com/dwiw96/GoCommerceAPI/testutils"
 )
 
 func TestMain(m *testing.M) {

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	conv "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/converter"
+	conv "github.com/dwiw96/GoCommerceAPI/pkg/utils/converter"
 
 	"github.com/joho/godotenv"
 )

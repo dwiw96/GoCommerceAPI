@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	db "github.com/dwiw96/vocagame-technical-test-backend/internal/db"
-	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
+	db "github.com/dwiw96/GoCommerceAPI/internal/db"
+	product "github.com/dwiw96/GoCommerceAPI/internal/features/products"
 )
 
 type productRepository struct {

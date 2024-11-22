@@ -1,4 +1,4 @@
-module github.com/dwiw96/vocagame-technical-test-backend
+module github.com/dwiw96/GoCommerceAPI
 
 go 1.23.1
 

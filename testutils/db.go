@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"sync"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
+	cfg "github.com/dwiw96/GoCommerceAPI/config"
+	pg "github.com/dwiw96/GoCommerceAPI/pkg/driver/postgresql"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"

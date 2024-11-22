@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	db "github.com/dwiw96/vocagame-technical-test-backend/internal/db"
-	products "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
-	productsRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/repository"
-	transactions "github.com/dwiw96/vocagame-technical-test-backend/internal/features/transactions"
-	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
-	walletsRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/repository"
+	db "github.com/dwiw96/GoCommerceAPI/internal/db"
+	products "github.com/dwiw96/GoCommerceAPI/internal/features/products"
+	productsRepo "github.com/dwiw96/GoCommerceAPI/internal/features/products/repository"
+	transactions "github.com/dwiw96/GoCommerceAPI/internal/features/transactions"
+	wallets "github.com/dwiw96/GoCommerceAPI/internal/features/wallets"
+	walletsRepo "github.com/dwiw96/GoCommerceAPI/internal/features/wallets/repository"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

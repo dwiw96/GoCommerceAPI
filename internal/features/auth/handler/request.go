@@ -1,7 +1,7 @@
 package delivery
 
 import (
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
 )
 
 type signupRequest struct {

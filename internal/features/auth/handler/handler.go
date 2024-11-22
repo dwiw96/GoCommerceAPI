@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	mid "github.com/dwiw96/vocagame-technical-test-backend/pkg/middleware"
-	responses "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	mid "github.com/dwiw96/GoCommerceAPI/pkg/middleware"
+	responses "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"

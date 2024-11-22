@@ -5,13 +5,13 @@ import (
 	"os"
 	"testing"
 
-	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
-	repo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/repository"
-	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
+	product "github.com/dwiw96/GoCommerceAPI/internal/features/products"
+	repo "github.com/dwiw96/GoCommerceAPI/internal/features/products/repository"
+	testUtils "github.com/dwiw96/GoCommerceAPI/testutils"
 
-	converter "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/converter"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
-	errorHandler "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	converter "github.com/dwiw96/GoCommerceAPI/pkg/utils/converter"
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
+	errorHandler "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"

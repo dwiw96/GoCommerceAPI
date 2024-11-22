@@ -6,10 +6,10 @@ import (
 
 	"testing"
 
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
-	password "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/password"
-	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
+	password "github.com/dwiw96/GoCommerceAPI/pkg/utils/password"
+	testUtils "github.com/dwiw96/GoCommerceAPI/testutils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"

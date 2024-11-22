@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	db "github.com/dwiw96/vocagame-technical-test-backend/internal/db"
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
+	db "github.com/dwiw96/GoCommerceAPI/internal/db"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"

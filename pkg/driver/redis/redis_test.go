@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	config "github.com/dwiw96/vocagame-technical-test-backend/config"
-	conv "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/converter"
+	config "github.com/dwiw96/GoCommerceAPI/config"
+	conv "github.com/dwiw96/GoCommerceAPI/pkg/utils/converter"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

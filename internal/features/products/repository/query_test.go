@@ -5,9 +5,9 @@ import (
 	"os"
 	"testing"
 
-	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
-	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
+	product "github.com/dwiw96/GoCommerceAPI/internal/features/products"
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
+	testUtils "github.com/dwiw96/GoCommerceAPI/testutils"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"

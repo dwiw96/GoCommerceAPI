@@ -11,10 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	middleware "github.com/dwiw96/vocagame-technical-test-backend/pkg/middleware"
-	password "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/password"
-	errorHandler "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	middleware "github.com/dwiw96/GoCommerceAPI/pkg/middleware"
+	password "github.com/dwiw96/GoCommerceAPI/pkg/utils/password"
+	errorHandler "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 )
 
 type authService struct {
