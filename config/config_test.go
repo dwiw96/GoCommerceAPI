@@ -14,7 +14,7 @@ func TestGetEnvConfig(t *testing.T) {
 		DB_PASSWORD:    "secret",
 		DB_HOST:        "localhost",
 		DB_PORT:        "5432",
-		DB_NAME:        "technical_test",
+		DB_NAME:        "commerce_main_db",
 		REDIS_HOST:     "localhost:6379",
 		REDIS_PASSWORD: "",
 		REDIS_DB:       0,

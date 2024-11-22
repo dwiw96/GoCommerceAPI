@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	os.Setenv("DB_PASSWORD", "secret")
 	os.Setenv("DB_HOST", "localhost")
 	os.Setenv("DB_PORT", "5432")
-	os.Setenv("DB_NAME", "technical_test")
+	os.Setenv("DB_NAME", "commerce_main_db")
 	os.Setenv("REDIS_HOST", "localhost:6379")
 	os.Setenv("REDIS_PASSWORD", "")
 

@@ -17,7 +17,7 @@ func TestConnectToPg(t *testing.T) {
 	os.Setenv("DB_PASSWORD", "secret")
 	os.Setenv("DB_HOST", "localhost")
 	os.Setenv("DB_PORT", "5432")
-	os.Setenv("DB_NAME", "technical_test")
+	os.Setenv("DB_NAME", "commerce_main_db")
 
 	envConfig := &config.EnvConfig{
 		DB_USERNAME: os.Getenv("DB_USERNAME"),
