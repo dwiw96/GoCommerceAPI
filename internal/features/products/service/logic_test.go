@@ -5,13 +5,14 @@ import (
 	"os"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
 	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
 	repo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/repository"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
+	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
+
 	converter "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/converter"
 	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
 	errorHandler "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,16 +25,21 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env := cfg.GetEnvConfig()
-	pool = pg.ConnectToPg(env)
+	pool = testUtils.GetPool()
 	defer pool.Close()
-	ctx = context.Background()
+	ctx = testUtils.GetContext()
 	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("test_service_product")
 
 	repoTest := repo.NewProductRepository(pool)
 	serviceTest = NewProductService(ctx, repoTest)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createProductTest(t *testing.T) (input product.CreateProductParams, res *product.Product) {
@@ -56,6 +62,9 @@ func createProductTest(t *testing.T) (input product.CreateProductParams, res *pr
 }
 
 func TestCreateProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	name := generator.CreateRandomString(7)
 
 	testCases := []struct {
@@ -143,6 +152,9 @@ func TestCreateProduct(t *testing.T) {
 }
 
 func TestGetProductByID(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 	testCases := []struct {
 		desc string
@@ -186,8 +198,7 @@ func TestGetProductByID(t *testing.T) {
 }
 
 func TestListProducts(t *testing.T) {
-	deleteQuery := `DELETE FROM products;`
-	_, err := pool.Exec(ctx, deleteQuery)
+	err := testUtils.DeleteSchemaTestData(pool)
 	require.NoError(t, err)
 
 	length := 10
@@ -284,6 +295,9 @@ func TestListProducts(t *testing.T) {
 }
 
 func TestUpdateProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 	_, resProduct2 := createProductTest(t)
 	name := generator.CreateRandomString(7)
@@ -405,6 +419,9 @@ func TestUpdateProduct(t *testing.T) {
 }
 
 func TestDeleteProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 	testCases := []struct {
 		desc string

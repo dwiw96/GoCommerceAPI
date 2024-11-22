@@ -11,11 +11,12 @@ import (
 
 	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
 	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
 	rd "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/redis"
 	middleware "github.com/dwiw96/vocagame-technical-test-backend/pkg/middleware"
 	conv "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/converter"
 	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	password "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/password"
+	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	redis "github.com/redis/go-redis/v9"
@@ -32,11 +33,15 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	os.Setenv("DB_USERNAME", "dwiw")
-	os.Setenv("DB_PASSWORD", "secret")
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_PORT", "5432")
-	os.Setenv("DB_NAME", "technical_test")
+	pool = testUtils.GetPool()
+	defer pool.Close()
+	ctx = testUtils.GetContext()
+	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("test_cache_auth")
+
+	password.JwtInit(pool, ctx)
+
 	os.Setenv("REDIS_HOST", "localhost:6379")
 	os.Setenv("REDIS_PASSWORD", "")
 	os.Setenv("REDIS_DB", "0")
@@ -46,29 +51,22 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	envConfig := &cfg.EnvConfig{
-		DB_USERNAME:    os.Getenv("DB_USERNAME"),
-		DB_PASSWORD:    os.Getenv("DB_PASSWORD"),
-		DB_HOST:        os.Getenv("DB_HOST"),
-		DB_PORT:        os.Getenv("DB_PORT"),
-		DB_NAME:        os.Getenv("DB_NAME"),
+	env := &cfg.EnvConfig{
 		REDIS_HOST:     os.Getenv("REDIS_HOST"),
 		REDIS_PASSWORD: os.Getenv("REDIS_PASSWORD"),
 		REDIS_DB:       redis_db,
 	}
 
-	pool = pg.ConnectToPg(envConfig)
-
-	client = rd.ConnectToRedis(envConfig)
+	client = rd.ConnectToRedis(env)
 	defer client.Close()
-
-	var cancel context.CancelFunc
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
 
 	cacheTest = NewAuthCache(client, ctx)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createToken(t *testing.T) (payload *auth.JwtPayload) {
@@ -94,6 +92,10 @@ func createToken(t *testing.T) (payload *auth.JwtPayload) {
 
 func TestCachingBlockedToken(t *testing.T) {
 	var err error
+
+	err = testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	tests := []struct {
 		name    string
 		payload *auth.JwtPayload
@@ -137,7 +139,8 @@ func TestCachingBlockedToken(t *testing.T) {
 }
 
 func TestCheckBlockedToken(t *testing.T) {
-	var err error
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name    string
@@ -156,7 +159,6 @@ func TestCheckBlockedToken(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Log("id:", test.payload.ID)
 			if !test.err {
 				err = cacheTest.CheckBlockedToken(*test.payload)
 			} else {

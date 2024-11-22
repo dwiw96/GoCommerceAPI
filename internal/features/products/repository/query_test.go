@@ -5,10 +5,9 @@ import (
 	"os"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
 	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
 	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
@@ -22,15 +21,20 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env := cfg.GetEnvConfig()
-	pool = pg.ConnectToPg(env)
+	pool = testUtils.GetPool()
 	defer pool.Close()
-	ctx = context.Background()
+	ctx = testUtils.GetContext()
 	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("test_repo_product")
 
 	repoTest = NewProductRepository(pool)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createProductTest(t *testing.T) (input product.CreateProductParams, res *product.Product) {
@@ -51,19 +55,10 @@ func createProductTest(t *testing.T) (input product.CreateProductParams, res *pr
 	return arg, res
 }
 
-func deleteProductsTest(t *testing.T) {
-	const query = `
-	TRUNCATE TABLE
-		transaction_histories,
-		products;
-	`
-
-	_, err := pool.Exec(ctx, query)
+func TestCreateProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
 	require.NoError(t, err)
 
-}
-
-func TestCreateProduct(t *testing.T) {
 	name := generator.CreateRandomString(10)
 	description := generator.CreateRandomString(50)
 	price := int32(generator.RandomInt(5, 500))
@@ -139,6 +134,9 @@ func TestCreateProduct(t *testing.T) {
 }
 
 func TestGetProductByID(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 
 	testCases := []struct {
@@ -182,7 +180,8 @@ func TestGetProductByID(t *testing.T) {
 }
 
 func TestListProducts(t *testing.T) {
-	deleteProductsTest(t)
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
 
 	var input []product.Product
 	for i := 0; i < 6; i++ {
@@ -267,7 +266,8 @@ func TestListProducts(t *testing.T) {
 }
 
 func TestGetTotalProducts(t *testing.T) {
-	deleteProductsTest(t)
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
 
 	length := 6
 	for i := 0; i < length; i++ {
@@ -280,6 +280,9 @@ func TestGetTotalProducts(t *testing.T) {
 }
 
 func TestUpdateProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 	testCases := []struct {
 		desc string
@@ -380,6 +383,9 @@ func TestUpdateProduct(t *testing.T) {
 }
 
 func TestDeleteProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 	testCases := []struct {
 		desc string
@@ -409,12 +415,12 @@ func TestDeleteProduct(t *testing.T) {
 }
 
 func TestUpdateProductAvailability(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
-	t.Log("product:", resProduct)
 	added := generator.RandomInt32(10, 50)
 	substract := generator.RandomInt32(-10, -1)
-	t.Log("added:", added)
-	t.Log("substract:", substract)
 	testCases := []struct {
 		desc string
 		arg  product.UpdateProductAvailabilityParams
@@ -465,7 +471,6 @@ func TestUpdateProductAvailability(t *testing.T) {
 			if !tC.err {
 				require.NoError(t, err)
 				assert.Equal(t, tC.ans.Availability, res.Availability)
-				t.Log("res:", res)
 			} else {
 				require.Error(t, err)
 			}

@@ -6,10 +6,10 @@ import (
 
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
 	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
 	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	password "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/password"
+	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,28 +24,22 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	os.Setenv("DB_USERNAME", "dwiw")
-	os.Setenv("DB_PASSWORD", "secret")
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_PORT", "5432")
-	os.Setenv("DB_NAME", "technical_test")
-
-	envConfig := &cfg.EnvConfig{
-		DB_USERNAME: os.Getenv("DB_USERNAME"),
-		DB_PASSWORD: os.Getenv("DB_PASSWORD"),
-		DB_HOST:     os.Getenv("DB_HOST"),
-		DB_PORT:     os.Getenv("DB_PORT"),
-		DB_NAME:     os.Getenv("DB_NAME"),
-	}
-
-	pool = pg.ConnectToPg(envConfig)
-
-	ctx = context.Background()
+	pool = testUtils.GetPool()
+	defer pool.Close()
+	ctx = testUtils.GetContext()
 	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("test_repo_auth")
+
+	password.JwtInit(pool, ctx)
 
 	repoTest = NewAuthRepository(pool, pool)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createRandomUser(t *testing.T) (res *auth.User) {
@@ -71,6 +65,9 @@ func createRandomUser(t *testing.T) (res *auth.User) {
 }
 
 func TestCreateUser(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	email := generator.CreateRandomEmail(generator.CreateRandomString(5))
 	testCases := []struct {
 		desc string
@@ -133,6 +130,9 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestGetUserByEmail(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user := createRandomUser(t)
 
 	testCases := []struct {
@@ -177,6 +177,9 @@ func TestGetUserByEmail(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user := createRandomUser(t)
 
 	usernameSuccess := generator.CreateRandomString(7)
@@ -264,6 +267,9 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	var users []auth.User
 	for i := 0; i < 5; i++ {
 		user := createRandomUser(t)
@@ -326,13 +332,19 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestLoadKey(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	res, err := repoTest.LoadKey(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
 }
 
 func TestInsertRefreshToken(t *testing.T) {
-	tests := []struct {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
+	testCases := []struct {
 		name  string
 		user  *auth.User
 		token uuid.UUID
@@ -366,20 +378,20 @@ func TestInsertRefreshToken(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if !test.err {
-				err := repoTest.InsertRefreshToken(ctx, test.user.ID, test.token)
+	for _, tC := range testCases {
+		t.Run(tC.name, func(t *testing.T) {
+			if !tC.err {
+				err := repoTest.InsertRefreshToken(ctx, tC.user.ID, tC.token)
 				require.NoError(t, err)
 			}
-			if test.name == "error_wrong_id" {
-				err := repoTest.InsertRefreshToken(ctx, 0, test.token)
+			if tC.name == "error_wrong_id" {
+				err := repoTest.InsertRefreshToken(ctx, 0, tC.token)
 				require.Error(t, err)
 			}
-			if test.name == "error_duplicate_uuid" {
-				err := repoTest.InsertRefreshToken(ctx, test.user.ID, test.token)
+			if tC.name == "error_duplicate_uuid" {
+				err := repoTest.InsertRefreshToken(ctx, tC.user.ID, tC.token)
 				require.NoError(t, err)
-				err = repoTest.InsertRefreshToken(ctx, test.user.ID, test.token)
+				err = repoTest.InsertRefreshToken(ctx, tC.user.ID, tC.token)
 				require.Error(t, err)
 			}
 		})
@@ -387,6 +399,9 @@ func TestInsertRefreshToken(t *testing.T) {
 }
 
 func TestReadRefreshToken(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	tests := []struct {
 		name  string
 		user  *auth.User
@@ -447,7 +462,10 @@ func TestReadRefreshToken(t *testing.T) {
 }
 
 func TestDeleteRefreshToken(t *testing.T) {
-	tests := []struct {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
+	testCases := []struct {
 		name  string
 		user  *auth.User
 		token uuid.UUID
@@ -481,22 +499,22 @@ func TestDeleteRefreshToken(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		go t.Run(test.name, func(t *testing.T) {
-			err := repoTest.InsertRefreshToken(ctx, test.user.ID, test.token)
+	for _, tC := range testCases {
+		t.Run(tC.name, func(t *testing.T) {
+			err := repoTest.InsertRefreshToken(ctx, tC.user.ID, tC.token)
 			require.NoError(t, err)
-			if !test.err {
-				err := repoTest.DeleteRefreshToken(ctx, test.user.ID)
+			if !tC.err {
+				err := repoTest.DeleteRefreshToken(ctx, tC.user.ID)
 				require.NoError(t, err)
 			}
-			if test.name == "error_wrong_id" {
+			if tC.name == "error_wrong_id" {
 				err := repoTest.DeleteRefreshToken(ctx, 0)
 				require.Error(t, err)
 			}
-			if test.name == "error_empty_uuid" {
-				err := repoTest.DeleteRefreshToken(ctx, test.user.ID)
+			if tC.name == "error_empty_uuid" {
+				err := repoTest.DeleteRefreshToken(ctx, tC.user.ID)
 				require.NoError(t, err)
-				err = repoTest.DeleteRefreshToken(ctx, test.user.ID)
+				err = repoTest.DeleteRefreshToken(ctx, tC.user.ID)
 				require.Error(t, err)
 			}
 		})

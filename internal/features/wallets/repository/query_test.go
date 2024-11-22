@@ -5,12 +5,11 @@ import (
 	"os"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
 	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
 	authRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/repository"
 	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
 	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
@@ -25,16 +24,21 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env := cfg.GetEnvConfig()
-	pool = pg.ConnectToPg(env)
+	pool = testUtils.GetPool()
 	defer pool.Close()
-	ctx = context.Background()
+	ctx = testUtils.GetContext()
 	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("repo_wallet")
 
 	repoTest = NewWalletsRepository(pool, ctx)
 	authRepoTest = authRepo.NewAuthRepository(pool, pool)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createRandomUser(t *testing.T) (res *auth.User) {
@@ -136,7 +140,6 @@ func TestCreateWallet(t *testing.T) {
 				assert.False(t, res.UpdatedAt.IsZero())
 			} else {
 				require.Error(t, err)
-				t.Log(err)
 			}
 		})
 	}
@@ -181,7 +184,6 @@ func TestGetWalletByUserID(t *testing.T) {
 				assert.Equal(t, wallet.CreatedAt, res.CreatedAt)
 				assert.Equal(t, wallet.UpdatedAt, res.UpdatedAt)
 			} else {
-				t.Log(err)
 				require.Error(t, err)
 			}
 		})
@@ -304,7 +306,6 @@ func TestGetWalletByID(t *testing.T) {
 				assert.Equal(t, wallet.CreatedAt, res.CreatedAt)
 				assert.Equal(t, wallet.UpdatedAt, res.UpdatedAt)
 			} else {
-				t.Log(err)
 				require.Error(t, err)
 			}
 		})

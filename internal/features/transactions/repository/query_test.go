@@ -5,7 +5,8 @@ import (
 	"os"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
+	testUtils "github.com/dwiw96/vocagame-technical-test-backend/testutils"
+	// cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
 	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
 	authRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/repository"
 	products "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
@@ -13,7 +14,8 @@ import (
 	transactions "github.com/dwiw96/vocagame-technical-test-backend/internal/features/transactions"
 	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
 	walletsRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/repository"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
+
+	// pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
 	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -32,18 +34,23 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env := cfg.GetEnvConfig()
-	pool = pg.ConnectToPg(env)
+	pool = testUtils.GetPool()
 	defer pool.Close()
-	ctx = context.Background()
+	ctx = testUtils.GetContext()
 	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("test_repo_transaction")
 
 	authRepoTest = authRepo.NewAuthRepository(pool, pool)
 	productRepoTest = productsRepo.NewProductRepository(pool)
 	walletRepoTest = walletsRepo.NewWalletsRepository(pool, ctx)
 	repoTest = NewTransactionsRepository(pool, pool, ctx)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createRandomUser(t *testing.T) (res *auth.User) {
@@ -112,18 +119,15 @@ func createPreparationTest(t *testing.T) (user *auth.User, wallet *wallets.Walle
 }
 
 func TestCreateTransaction(t *testing.T) {
-	user1, wallet1, product1 := createPreparationTest(t)
-	t.Log("user1:", user1)
-	t.Log("wallet1:", wallet1)
-	t.Log("product1:", product1)
-	user2, wallet2, _ := createPreparationTest(t)
-	t.Log("user2:", user2)
-	t.Log("wallet2:", wallet2)
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
+	_, wallet1, product1 := createPreparationTest(t)
+	_, wallet2, _ := createPreparationTest(t)
 
 	quantity := generator.RandomInt32(1, 10)
 	fromWalletID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
 	toWalletID := pgtype.Int4{Int32: wallet2.ID, Valid: true}
-	// productID := pgtype.Int4{Int32: product1.ID, Valid: true}
 	amount := generator.RandomInt32(100, wallet1.Balance)
 	Quantity := pgtype.Int4{Int32: quantity, Valid: true}
 	tTypePurchase := transactions.TransactionTypesPurchase
@@ -237,16 +241,15 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func createTransactionTest(t *testing.T) (purchase, transfer, deposit, withdrawal *transactions.TransactionHistory) {
-	user1, wallet1, product1 := createPreparationTest(t)
-	t.Log("user1:", user1)
-	t.Log("wallet1:", wallet1)
-	t.Log("product1:", product1)
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
+	_, wallet1, product1 := createPreparationTest(t)
 	_, wallet2, _ := createPreparationTest(t)
 
 	quantity := generator.RandomInt32(1, 10)
 	fromWalletID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
 	toWalletID := pgtype.Int4{Int32: wallet2.ID, Valid: true}
-	// productID := pgtype.Int4{Int32: product1.ID, Valid: true}
 	amount := generator.RandomInt32(100, wallet1.Balance)
 	Quantity := pgtype.Int4{Int32: quantity, Valid: true}
 	tTypePurchase := transactions.TransactionTypesPurchase
@@ -372,6 +375,9 @@ func createTransactionTest(t *testing.T) (purchase, transfer, deposit, withdrawa
 }
 
 func TestUpdateTransaction(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	purchase, transfer, deposit, withdrawal := createTransactionTest(t)
 	require.Equal(t, transactions.TransactionStatusPending, purchase.TStatus)
 	require.Equal(t, transactions.TransactionStatusPending, transfer.TStatus)
@@ -379,7 +385,6 @@ func TestUpdateTransaction(t *testing.T) {
 	require.Equal(t, transactions.TransactionStatusPending, withdrawal.TStatus)
 
 	amount := generator.RandomInt32(10, 100)
-	t.Log("AMOUNT:", amount)
 
 	testCases := []struct {
 		desc  string
@@ -476,12 +481,11 @@ func TestUpdateTransaction(t *testing.T) {
 }
 
 func TestTransactionPurchaseProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user1, wallet1, product1 := createPreparationTest(t)
-	t.Log("user1:", user1)
-	t.Log("wallet1:", wallet1)
-	t.Log("product1:", product1)
 	_, product2 := createProductTest(t)
-	t.Log("product2:", product2)
 
 	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
 	fromWalletID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
@@ -489,7 +493,6 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 	randQuantity := generator.RandomInt32(1, product1.Availability)
 	quantity := pgtype.Int4{Int32: randQuantity, Valid: true}
 	tTypePurchase := transactions.TransactionTypesPurchase
-	t.Log("QUANTITIY:", quantity)
 
 	testCases := []struct {
 		desc      string
@@ -605,8 +608,10 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 }
 
 func TestTransactionDepositOrWithdraw(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user1, wallet1, _ := createPreparationTest(t)
-	t.Log("wallet1:", wallet1)
 
 	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
 	amount := generator.RandomInt32(100, 1000)
@@ -698,10 +703,11 @@ func TestTransactionDepositOrWithdraw(t *testing.T) {
 }
 
 func TestTransactionTransfer(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user1, wallet1, _ := createPreparationTest(t)
-	t.Log("wallet 1:", wallet1)
 	_, wallet2, _ := createPreparationTest(t)
-	t.Log("wallet 2:", wallet2)
 
 	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
 	wallet1ID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
