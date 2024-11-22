@@ -211,15 +211,12 @@ func (r *authRepository) DeleteAllUserInformation(ctx context.Context, arg auth.
 		}
 
 		err = ar.DeleteUser(ctx, arg)
-		fmt.Println("TX delete err:", err)
 		if err != nil {
-			fmt.Println("[before] TX delete err:", err)
 			return err
 		}
 
 		return nil
 	})
-	fmt.Println("[after] TX delete err:", err)
 	return err
 }
 

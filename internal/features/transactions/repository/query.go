@@ -154,7 +154,7 @@ func (t *transactionsRepository) TransactionPurchaseProduct(arg transactions.Tra
 			TType:        transactions.TransactionTypesPurchase,
 			TStatus:      transactions.TransactionStatusPending,
 		}
-		res, err = t.CreateTransaction(createTransactionArg)
+		res, err = tr.CreateTransaction(createTransactionArg)
 		if err != nil {
 			return fmt.Errorf("failed to create transaction, err: %w", err)
 		}

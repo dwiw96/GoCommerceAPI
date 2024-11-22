@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 
 	transactions "github.com/dwiw96/vocagame-technical-test-backend/internal/features/transactions"
 	errs "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
@@ -26,7 +25,6 @@ func NewTransactionsService(ctx context.Context, repo transactions.IRepository) 
 }
 
 func handleError(arg error) (code int, err error) {
-	log.Println(arg)
 	if errors.Is(arg, pgx.ErrNoRows) {
 		return errs.CodeFailedUser, errs.ErrNoData
 	}
@@ -66,8 +64,6 @@ func (s *transactionsService) PurchaseProduct(arg transactions.TransactionParams
 	res, err = s.repo.TransactionPurchaseProduct(arg)
 	if err != nil {
 		code, newErr := handleError(err)
-		log.Println("handlerError code:", code)
-		log.Println("handlerError err:", newErr)
 		return res, code, newErr
 	}
 
