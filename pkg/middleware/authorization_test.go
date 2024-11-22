@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
-	rd "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/redis"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	cfg "github.com/dwiw96/GoCommerceAPI/config"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	pg "github.com/dwiw96/GoCommerceAPI/pkg/driver/postgresql"
+	rd "github.com/dwiw96/GoCommerceAPI/pkg/driver/redis"
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -28,12 +28,12 @@ var (
 
 func TestMain(m *testing.M) {
 	os.Setenv("DB_USERNAME", "dwiw")
-	os.Setenv("DB_PASSWORD", "vocagame")
+	os.Setenv("DB_PASSWORD", "secret")
 	os.Setenv("DB_HOST", "localhost")
 	os.Setenv("DB_PORT", "5432")
 	os.Setenv("DB_NAME", "technical_test")
 	os.Setenv("REDIS_HOST", "localhost:6379")
-	os.Setenv("REDIS_PASSWORD", "vocagame")
+	os.Setenv("REDIS_PASSWORD", "")
 
 	envConfig := &cfg.EnvConfig{
 		DB_USERNAME:    os.Getenv("DB_USERNAME"),
@@ -166,15 +166,10 @@ func TestPayloadVerification(t *testing.T) {
 	query := `
 	INSERT INTO users(
 		email,
-		first_name,
-		middle_name,
-		last_name,
-		address,
-		gender,
-		marital_status_id,
+		username,
 		hashed_password
 	) VALUES 
-		($1, $2, $3, $4, $5, $6, $7, $8) 
+		($1, $2, $3) 
 	RETURNING id;`
 
 	row := pool.QueryRow(ctx, query, user.Email, user.Username, user.HashedPassword)

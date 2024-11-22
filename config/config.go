@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	conv "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/converter"
+	conv "github.com/dwiw96/GoCommerceAPI/pkg/utils/converter"
 
 	"github.com/joho/godotenv"
 )
@@ -24,8 +24,6 @@ type EnvConfig struct {
 }
 
 func GetEnvConfig() *EnvConfig {
-	log.Println("<- getEnvConfig()")
-
 	initEnvConfig()
 	var err error
 
@@ -44,13 +42,10 @@ func GetEnvConfig() *EnvConfig {
 		log.Fatal("get env config, err:", err)
 	}
 
-	log.Println("-> getEnvConfig()")
 	return &resEnvConfig
 }
 
 func initEnvConfig() {
-	log.Println("<- initEnvConfig()")
-
 	_, b, _, _ := runtime.Caller(0)
 	basePath := filepath.Dir(b)
 	projectPath := filepath.Dir((basePath))
@@ -60,6 +55,4 @@ func initEnvConfig() {
 		log.Println("failed to load .env file, msg:", err)
 		return
 	}
-
-	log.Println("-> initEnvConfig()")
 }

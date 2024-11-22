@@ -1,0 +1,71 @@
+name: CI-Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        go-version: [ '1.21.x' ]
+    
+    services:
+      db:
+        image: postgres
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: dwiw
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: technical_test
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_DB: 0
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.23.x'
+    
+    - name: Install golang-migrate
+      run: |
+        curl -L https://github.com/golang-migrate/migrate/releases/download/v4.18.1/migrate.linux-amd64.tar.gz | tar xvz
+        sudo mv migrate /usr/local/bin/
+        which migrate
+
+    - name: Run migration
+      run: make migrate-up
+    
+    - name: Use vendor for dependencies
+      run: go env -w GOFLAGS="-mod=vendor"
+
+    - name: Build
+      run: go build -v ./...
+
+    - name: Test
+      run: go test -v -cover ./...

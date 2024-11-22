@@ -31,13 +31,11 @@ func TestHashingPassword(t *testing.T) {
 			if tests[i].err == false {
 				require.NoError(t, err)
 				assert.NotEmpty(t, res)
-				t.Log("hashed password:", res)
 
 			} else {
 				require.Error(t, err)
 				assert.Empty(t, res)
-				assert.Equal(t, "your password is empty", err.Error())
-				t.Log("hashed password:", res)
+				assert.Equal(t, "password is empty", err.Error())
 			}
 		})
 	}
@@ -68,7 +66,6 @@ func TestVerifyHashPassword(t *testing.T) {
 			hashedPassword, err := HashingPassword(tests[i].input1)
 			require.NoError(t, err)
 			assert.NotEmpty(t, hashedPassword)
-			t.Log("hashed password:", hashedPassword)
 			err2 := VerifyHashPassword(tests[i].input2, hashedPassword)
 			if tests[i].err == false {
 				require.NoError(t, err2)

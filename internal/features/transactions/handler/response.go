@@ -3,7 +3,7 @@ package handler
 import (
 	"time"
 
-	transactions "github.com/dwiw96/vocagame-technical-test-backend/internal/features/transactions"
+	transactions "github.com/dwiw96/GoCommerceAPI/internal/features/transactions"
 )
 
 type transactionResp struct {

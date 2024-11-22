@@ -5,18 +5,18 @@ import (
 	"os"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	authRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/repository"
-	products "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
-	productsRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/repository"
-	transactions "github.com/dwiw96/vocagame-technical-test-backend/internal/features/transactions"
-	transactionsRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/transactions/repository"
-	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
-	walletsRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/repository"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
-	errs "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	authRepo "github.com/dwiw96/GoCommerceAPI/internal/features/auth/repository"
+	products "github.com/dwiw96/GoCommerceAPI/internal/features/products"
+	productsRepo "github.com/dwiw96/GoCommerceAPI/internal/features/products/repository"
+	transactions "github.com/dwiw96/GoCommerceAPI/internal/features/transactions"
+	transactionsRepo "github.com/dwiw96/GoCommerceAPI/internal/features/transactions/repository"
+	wallets "github.com/dwiw96/GoCommerceAPI/internal/features/wallets"
+	walletsRepo "github.com/dwiw96/GoCommerceAPI/internal/features/wallets/repository"
+	testUtils "github.com/dwiw96/GoCommerceAPI/testutils"
+
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
+	errs "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -35,11 +35,12 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env := cfg.GetEnvConfig()
-	pool = pg.ConnectToPg(env)
+	pool = testUtils.GetPool()
 	defer pool.Close()
-	ctx = context.Background()
+	ctx = testUtils.GetContext()
 	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("test_service_transaction")
 
 	authRepoTest = authRepo.NewAuthRepository(pool, pool)
 	productRepoTest = productsRepo.NewProductRepository(pool)
@@ -47,7 +48,11 @@ func TestMain(m *testing.M) {
 	repoTest = transactionsRepo.NewTransactionsRepository(pool, pool, ctx)
 	serviceTest = NewTransactionsService(ctx, repoTest)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createRandomUser(t *testing.T) (res *auth.User) {
@@ -116,12 +121,11 @@ func createPreparationTest(t *testing.T) (user *auth.User, wallet *wallets.Walle
 }
 
 func TestTransactionPurchaseProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user1, wallet1, product1 := createPreparationTest(t)
-	t.Log("user1:", user1)
-	t.Log("wallet1:", wallet1)
-	t.Log("product1:", product1)
 	_, product2 := createProductTest(t)
-	t.Log("product2:", product2)
 
 	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
 	fromWalletID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
@@ -129,7 +133,6 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 	randQuantity := generator.RandomInt32(1, product1.Availability)
 	quantity := pgtype.Int4{Int32: randQuantity, Valid: true}
 	tTypePurchase := transactions.TransactionTypesPurchase
-	t.Log("QUANTITIY:", quantity)
 
 	testCases := []struct {
 		desc      string
@@ -258,8 +261,10 @@ func TestTransactionPurchaseProduct(t *testing.T) {
 }
 
 func TestDepositAndWithdraw(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user1, wallet1, _ := createPreparationTest(t)
-	t.Log("wallet1:", wallet1)
 
 	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
 	toWalletID := pgtype.Int4{Int32: wallet1.ID, Valid: true}
@@ -419,10 +424,11 @@ func TestDepositAndWithdraw(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user1, wallet1, _ := createPreparationTest(t)
-	t.Log("wallet 1:", wallet1)
 	_, wallet2, _ := createPreparationTest(t)
-	t.Log("wallet 2:", wallet2)
 
 	userID := pgtype.Int4{Int32: user1.ID, Valid: true}
 	wallet1ID := pgtype.Int4{Int32: wallet1.ID, Valid: true}

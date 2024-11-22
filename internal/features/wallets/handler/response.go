@@ -3,7 +3,7 @@ package handler
 import (
 	"time"
 
-	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
+	wallets "github.com/dwiw96/GoCommerceAPI/internal/features/wallets"
 )
 
 type walletResp struct {
