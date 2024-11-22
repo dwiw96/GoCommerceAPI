@@ -1,4 +1,4 @@
-name: CI-Test
+name: ci-test
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        go-version: [ '1.21.x' ]
+        go-version: [ '1.23.1' ]
     
     services:
       db:
@@ -50,7 +50,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.23.x'
+        go-version: '1.23.1'
     
     - name: Install golang-migrate
       run: |
@@ -63,9 +63,6 @@ jobs:
     
     - name: Use vendor for dependencies
       run: go env -w GOFLAGS="-mod=vendor"
-
-    - name: Build
-      run: go build -v ./...
 
     - name: Test
       run: go test -v -cover ./...
