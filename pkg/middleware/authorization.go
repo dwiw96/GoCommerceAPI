@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	response "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	response "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"

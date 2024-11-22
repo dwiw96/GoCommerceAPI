@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	db "github.com/dwiw96/vocagame-technical-test-backend/internal/db"
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
+	db "github.com/dwiw96/GoCommerceAPI/internal/db"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -211,15 +211,12 @@ func (r *authRepository) DeleteAllUserInformation(ctx context.Context, arg auth.
 		}
 
 		err = ar.DeleteUser(ctx, arg)
-		fmt.Println("TX delete err:", err)
 		if err != nil {
-			fmt.Println("[before] TX delete err:", err)
 			return err
 		}
 
 		return nil
 	})
-	fmt.Println("[after] TX delete err:", err)
 	return err
 }
 

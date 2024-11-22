@@ -3,8 +3,8 @@ package repository
 import (
 	"context"
 
-	db "github.com/dwiw96/vocagame-technical-test-backend/internal/db"
-	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
+	db "github.com/dwiw96/GoCommerceAPI/internal/db"
+	wallets "github.com/dwiw96/GoCommerceAPI/internal/features/wallets"
 )
 
 type walletsRepository struct {

@@ -4,13 +4,13 @@ import (
 	"context"
 	"log"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	factory "github.com/dwiw96/vocagame-technical-test-backend/factory"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
-	rd "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/redis"
-	server "github.com/dwiw96/vocagame-technical-test-backend/server"
+	cfg "github.com/dwiw96/GoCommerceAPI/config"
+	factory "github.com/dwiw96/GoCommerceAPI/factory"
+	pg "github.com/dwiw96/GoCommerceAPI/pkg/driver/postgresql"
+	rd "github.com/dwiw96/GoCommerceAPI/pkg/driver/redis"
+	server "github.com/dwiw96/GoCommerceAPI/server"
 
-	password "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/password"
+	password "github.com/dwiw96/GoCommerceAPI/pkg/utils/password"
 )
 
 func main() {

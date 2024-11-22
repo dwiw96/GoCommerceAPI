@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/dwiw96/vocagame-technical-test-backend/internal/features/transactions"
+	"github.com/dwiw96/GoCommerceAPI/internal/features/transactions"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 

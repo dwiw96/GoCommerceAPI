@@ -7,7 +7,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
 )
 
 type authCache struct {

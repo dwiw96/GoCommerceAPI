@@ -9,8 +9,7 @@ import (
 
 func HashingPassword(password string) (string, error) {
 	if password == "" {
-		log.Println("HashingPassword(): password is empty")
-		return "", fmt.Errorf("your password is empty")
+		return "", fmt.Errorf("password is empty")
 	}
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

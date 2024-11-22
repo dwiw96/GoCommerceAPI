@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
-	rd "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/redis"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	cfg "github.com/dwiw96/GoCommerceAPI/config"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	pg "github.com/dwiw96/GoCommerceAPI/pkg/driver/postgresql"
+	rd "github.com/dwiw96/GoCommerceAPI/pkg/driver/redis"
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"

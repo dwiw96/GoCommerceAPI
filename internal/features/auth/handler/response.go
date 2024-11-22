@@ -1,6 +1,6 @@
 package delivery
 
-import auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
+import auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
 
 type signupResponse struct {
 	Username string `json:"username"`

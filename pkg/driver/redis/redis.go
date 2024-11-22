@@ -3,7 +3,7 @@ package redisPkg
 import (
 	"github.com/redis/go-redis/v9"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
+	cfg "github.com/dwiw96/GoCommerceAPI/config"
 )
 
 func ConnectToRedis(envCfg *cfg.EnvConfig) *redis.Client {

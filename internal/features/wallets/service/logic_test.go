@@ -6,14 +6,13 @@ import (
 	"os"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	authRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/repository"
-	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
-	walletsRepo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/repository"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
-	errs "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	authRepo "github.com/dwiw96/GoCommerceAPI/internal/features/auth/repository"
+	wallets "github.com/dwiw96/GoCommerceAPI/internal/features/wallets"
+	walletsRepo "github.com/dwiw96/GoCommerceAPI/internal/features/wallets/repository"
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
+	errs "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
+	testUtils "github.com/dwiw96/GoCommerceAPI/testutils"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
@@ -28,17 +27,22 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env := cfg.GetEnvConfig()
-	pool = pg.ConnectToPg(env)
+	pool = testUtils.GetPool()
 	defer pool.Close()
-	ctx = context.Background()
+	ctx = testUtils.GetContext()
 	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("service_wallet")
 
 	repo := walletsRepo.NewWalletsRepository(pool, ctx)
 	authRepoTest = authRepo.NewAuthRepository(pool, pool)
 	serviceTest = NewWalletsService(ctx, repo)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createRandomUser(t *testing.T) (res *auth.User) {
