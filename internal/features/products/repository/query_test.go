@@ -5,10 +5,9 @@ import (
 	"os"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	product "github.com/dwiw96/GoCommerceAPI/internal/features/products"
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
+	testUtils "github.com/dwiw96/GoCommerceAPI/testutils"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
@@ -22,20 +21,25 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	env := cfg.GetEnvConfig()
-	pool = pg.ConnectToPg(env)
+	pool = testUtils.GetPool()
 	defer pool.Close()
-	ctx = context.Background()
+	ctx = testUtils.GetContext()
 	defer ctx.Done()
+
+	schemaCleanup := testUtils.SetupDB("test_repo_product")
 
 	repoTest = NewProductRepository(pool)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createProductTest(t *testing.T) (input product.CreateProductParams, res *product.Product) {
 	arg := product.CreateProductParams{
-		Name:         generator.CreateRandomString(7),
+		Name:         generator.CreateRandomString(10),
 		Description:  generator.CreateRandomString(50),
 		Price:        int32(generator.RandomInt(5, 500)),
 		Availability: int32(generator.RandomInt(0, 50)),
@@ -52,9 +56,10 @@ func createProductTest(t *testing.T) (input product.CreateProductParams, res *pr
 }
 
 func TestCreateProduct(t *testing.T) {
-	ctx := context.Background()
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
 
-	name := generator.CreateRandomString(7)
+	name := generator.CreateRandomString(10)
 	description := generator.CreateRandomString(50)
 	price := int32(generator.RandomInt(5, 500))
 	availability := int32(generator.RandomInt(0, 50))
@@ -62,7 +67,6 @@ func TestCreateProduct(t *testing.T) {
 	testCases := []struct {
 		name   string
 		params product.CreateProductParams
-		ctx    context.Context
 		err    bool
 	}{
 		{
@@ -73,17 +77,15 @@ func TestCreateProduct(t *testing.T) {
 				Price:        price,
 				Availability: availability,
 			},
-			ctx: ctx,
 			err: false,
 		}, {
 			name: "success_partial_params",
 			params: product.CreateProductParams{
-				Name:         name,
+				Name:         name + "2",
 				Description:  "",
 				Price:        price,
 				Availability: availability,
 			},
-			ctx: ctx,
 			err: false,
 		}, {
 			name: "failed_no_name",
@@ -92,7 +94,6 @@ func TestCreateProduct(t *testing.T) {
 				Price:        price,
 				Availability: availability,
 			},
-			ctx: ctx,
 			err: true,
 		}, {
 			name: "failed_minus_price",
@@ -102,7 +103,6 @@ func TestCreateProduct(t *testing.T) {
 				Price:        -1,
 				Availability: availability,
 			},
-			ctx: ctx,
 			err: true,
 		}, {
 			name: "failed_minus_availability",
@@ -112,7 +112,6 @@ func TestCreateProduct(t *testing.T) {
 				Price:        price,
 				Availability: -1,
 			},
-			ctx: ctx,
 			err: true,
 		},
 	}
@@ -135,6 +134,9 @@ func TestCreateProduct(t *testing.T) {
 }
 
 func TestGetProductByID(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 
 	testCases := []struct {
@@ -178,8 +180,7 @@ func TestGetProductByID(t *testing.T) {
 }
 
 func TestListProducts(t *testing.T) {
-	deleteQuery := `DELETE FROM products;`
-	_, err := pool.Exec(ctx, deleteQuery)
+	err := testUtils.DeleteSchemaTestData(pool)
 	require.NoError(t, err)
 
 	var input []product.Product
@@ -189,49 +190,55 @@ func TestListProducts(t *testing.T) {
 		input = append(input, *temp)
 	}
 	testCases := []struct {
-		desc  string
-		input product.ListProductsParams
-		ans   []product.Product
-		err   bool
+		desc   string
+		arg    product.ListProductsParams
+		length int
+		idx    int
+		err    bool
 	}{
 		{
 			desc: "success_full",
-			input: product.ListProductsParams{
+			arg: product.ListProductsParams{
 				Limit:  6,
 				Offset: 0,
 			},
-			err: false,
+			length: 6,
+			idx:    0,
+			err:    false,
 		}, {
 			desc: "success_partial",
-			input: product.ListProductsParams{
+			arg: product.ListProductsParams{
 				Limit:  4,
 				Offset: 3,
 			},
-			err: false,
+			length: 3,
+			idx:    3,
+			err:    false,
 		}, {
 			desc: "success_empty",
-			input: product.ListProductsParams{
+			arg: product.ListProductsParams{
 				Limit:  5,
 				Offset: 1000,
 			},
-			err: false,
+			length: 0,
+			err:    false,
 		}, {
 			desc: "failed_minus_limit",
-			input: product.ListProductsParams{
+			arg: product.ListProductsParams{
 				Limit:  -1,
 				Offset: 0,
 			},
 			err: true,
 		}, {
 			desc: "failed_minus_offset",
-			input: product.ListProductsParams{
+			arg: product.ListProductsParams{
 				Limit:  5,
 				Offset: -50,
 			},
 			err: true,
 		}, {
 			desc: "failed_minus_arg",
-			input: product.ListProductsParams{
+			arg: product.ListProductsParams{
 				Limit:  -1,
 				Offset: -1,
 			},
@@ -240,20 +247,16 @@ func TestListProducts(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			res, err := repoTest.ListProducts(ctx, tC.input)
+			res, err := repoTest.ListProducts(ctx, tC.arg)
 			if !tC.err {
 				require.NoError(t, err)
-				switch tC.desc {
-				case "success_full":
-					assert.Equal(t, 6, len(*res))
-					assert.Equal(t, input, *res)
-				case "success_partial":
-					assert.Equal(t, 3, len(*res))
-					for i := 0; i < 3; i++ {
-						assert.Equal(t, input[i+3], (*res)[i])
-					}
-				case "success_empty":
-					assert.Empty(t, res)
+				assert.Equal(t, tC.length, len(*res))
+				for i := 0; i < len(*res); i++ {
+					assert.Equal(t, input[tC.idx].Name, (*res)[i].Name)
+					assert.Equal(t, input[tC.idx].Description, (*res)[i].Description)
+					assert.Equal(t, input[tC.idx].Price, (*res)[i].Price)
+					assert.Equal(t, input[tC.idx].Availability, (*res)[i].Availability)
+					tC.idx++
 				}
 			} else {
 				require.Error(t, err)
@@ -263,8 +266,7 @@ func TestListProducts(t *testing.T) {
 }
 
 func TestGetTotalProducts(t *testing.T) {
-	deleteQuery := `DELETE FROM products;`
-	_, err := pool.Exec(ctx, deleteQuery)
+	err := testUtils.DeleteSchemaTestData(pool)
 	require.NoError(t, err)
 
 	length := 6
@@ -278,6 +280,9 @@ func TestGetTotalProducts(t *testing.T) {
 }
 
 func TestUpdateProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 	testCases := []struct {
 		desc string
@@ -378,6 +383,9 @@ func TestUpdateProduct(t *testing.T) {
 }
 
 func TestDeleteProduct(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, resProduct := createProductTest(t)
 	testCases := []struct {
 		desc string
@@ -399,6 +407,70 @@ func TestDeleteProduct(t *testing.T) {
 			err := repoTest.DeleteProduct(ctx, tC.id)
 			if !tC.err {
 				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestUpdateProductAvailability(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
+	_, resProduct := createProductTest(t)
+	added := generator.RandomInt32(10, 50)
+	substract := generator.RandomInt32(-10, -1)
+	testCases := []struct {
+		desc string
+		arg  product.UpdateProductAvailabilityParams
+		ans  product.Product
+		err  bool
+	}{
+		{
+			desc: "success_added",
+			arg: product.UpdateProductAvailabilityParams{
+				ID:           resProduct.ID,
+				Availability: added,
+			},
+			ans: product.Product{
+				ID:           resProduct.ID,
+				Availability: resProduct.Availability + added,
+			},
+			err: false,
+		}, {
+			desc: "success_substract",
+			arg: product.UpdateProductAvailabilityParams{
+				ID:           resProduct.ID,
+				Availability: substract,
+			},
+			ans: product.Product{
+				ID:           resProduct.ID,
+				Availability: resProduct.Availability + added + substract,
+			},
+			err: false,
+		}, {
+			desc: "failed_negative_availability",
+			arg: product.UpdateProductAvailabilityParams{
+				ID:           resProduct.ID,
+				Availability: -(resProduct.Availability + added) * 2,
+			},
+			err: true,
+		}, {
+			desc: "failed_wrong_id",
+			arg: product.UpdateProductAvailabilityParams{
+				ID:           0,
+				Availability: generator.RandomInt32(0, 50),
+			},
+			err: true,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res, err := repoTest.UpdateProductAvailability(ctx, tC.arg)
+			if !tC.err {
+				require.NoError(t, err)
+				assert.Equal(t, tC.ans.Availability, res.Availability)
 			} else {
 				require.Error(t, err)
 			}

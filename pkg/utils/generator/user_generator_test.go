@@ -42,6 +42,52 @@ func TestRandomInt(t *testing.T) {
 	}
 }
 
+func TestRandomInt32(t *testing.T) {
+	testCases := []struct {
+		desc string
+		min  int32
+		max  int32
+	}{
+		{
+			desc: "success_positive",
+			min:  1,
+			max:  5,
+		}, {
+			desc: "success_positive",
+			min:  5,
+			max:  10,
+		}, {
+			desc: "success_positive",
+			min:  5,
+			max:  15,
+		}, {
+			desc: "success_positive",
+			min:  70,
+			max:  120,
+		}, {
+			desc: "success_positive",
+			min:  0,
+			max:  100,
+		}, {
+			desc: "success_negative",
+			min:  -500,
+			max:  -1,
+		}, {
+			desc: "success_negative",
+			min:  -1000,
+			max:  -500,
+		},
+	}
+
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			res := RandomInt32(tC.min, tC.max)
+			assert.GreaterOrEqual(t, res, tC.min)
+			assert.LessOrEqual(t, res, tC.max)
+		})
+	}
+}
+
 func TestCreateRandomName(t *testing.T) {
 	length := []int{3, 5, 7, 4, 2}
 	for _, v := range length {

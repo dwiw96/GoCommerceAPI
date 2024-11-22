@@ -32,7 +32,6 @@ func TestConvertStrToDate(t *testing.T) {
 
 		date := res.Format("2006-01-02")
 		assert.Equal(t, test.ans, date)
-		t.Log(res)
 	}
 }
 

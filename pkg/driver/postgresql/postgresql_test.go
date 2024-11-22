@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	config "github.com/dwiw96/vocagame-technical-test-backend/config"
+	config "github.com/dwiw96/GoCommerceAPI/config"
 
 	"github.com/stretchr/testify/require"
 )

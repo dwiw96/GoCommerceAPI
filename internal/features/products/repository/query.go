@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	db "github.com/dwiw96/vocagame-technical-test-backend/internal/db"
-	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
+	db "github.com/dwiw96/GoCommerceAPI/internal/db"
+	product "github.com/dwiw96/GoCommerceAPI/internal/features/products"
 )
 
 type productRepository struct {
@@ -166,4 +166,32 @@ func (q *productRepository) DeleteProduct(ctx context.Context, id int32) error {
 		return fmt.Errorf("no row deleted")
 	}
 	return err
+}
+
+const updateProductAvailability = `-- name: UpdateProductAvailability :one
+UPDATE 
+    products
+SET 
+    availability = coalesce(availability + ($1), availability)
+WHERE 
+    id = $2
+-- AND 
+    -- $1::INT IS NOT NULL AND (availability + $1) >= 0
+RETURNING id, name, description, price, availability
+`
+
+func (q *productRepository) UpdateProductAvailability(ctx context.Context, arg product.UpdateProductAvailabilityParams) (*product.Product, error) {
+	row := q.db.QueryRow(ctx, updateProductAvailability,
+		arg.Availability,
+		arg.ID,
+	)
+	var i product.Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Price,
+		&i.Availability,
+	)
+	return &i, err
 }

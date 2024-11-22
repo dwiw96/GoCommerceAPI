@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
-	db "github.com/dwiw96/vocagame-technical-test-backend/internal/db"
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
+	db "github.com/dwiw96/GoCommerceAPI/internal/db"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,6 +24,25 @@ func NewAuthRepository(db db.DBTX, txDb *pgxpool.Pool) auth.IRepository {
 		db:   db,
 		txDb: txDb,
 	}
+}
+
+func (r *authRepository) ExecDbTx(ctx context.Context, fn func(*authRepository) error) error {
+	tx, err := r.txDb.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start db transaction, err: %v", err)
+	}
+
+	q := &authRepository{db: tx}
+	err = fn(q)
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	return err
 }
 
 const createUser = `-- name: CreateUser :one
@@ -103,6 +122,10 @@ DELETE FROM users WHERE id = $1 AND email = $2
 func (r *authRepository) DeleteUser(ctx context.Context, arg auth.DeleteUserParams) error {
 	res, err := r.db.Exec(ctx, deleteUser, arg.ID, arg.Email)
 
+	if err != nil {
+		return err
+	}
+
 	if res.RowsAffected() == 0 {
 		return fmt.Errorf("failed to delete user, err: no user found")
 	}
@@ -180,39 +203,21 @@ func (r *authRepository) DeleteRefreshToken(ctx context.Context, userID int32) (
 	return nil
 }
 
-func (r *authRepository) ExecDbTx(ctx context.Context, fn func(*authRepository) error) error {
-	tx, err := r.txDb.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to start db transaction, err: %v", err)
-	}
-
-	err = fn(r)
-	if err != nil {
-		if rbErr := tx.Rollback(ctx); rbErr != nil {
-			return fmt.Errorf("failed to rollback, err = %v", rbErr)
-		}
-		return fmt.Errorf("failed db transaction, err: %v", err)
-	}
-
-	return tx.Commit(ctx)
-}
-
 func (r *authRepository) DeleteAllUserInformation(ctx context.Context, arg auth.DeleteUserParams) (err error) {
-	r.ExecDbTx(ctx, func(ar *authRepository) error {
-		err = ar.DeleteUser(ctx, arg)
+	err = r.ExecDbTx(ctx, func(ar *authRepository) error {
+		err = ar.DeleteRefreshToken(ctx, arg.ID)
 		if err != nil {
 			return err
 		}
 
-		err = ar.DeleteRefreshToken(ctx, arg.ID)
+		err = ar.DeleteUser(ctx, arg)
 		if err != nil {
 			return err
 		}
 
 		return nil
 	})
-
-	return nil
+	return err
 }
 
 func (r *authRepository) UpdateRefreshToken(ctx context.Context, userID int32, refreshToken uuid.UUID) (err error) {

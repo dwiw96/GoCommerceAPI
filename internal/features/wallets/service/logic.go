@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	wallets "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets"
-	errs "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	wallets "github.com/dwiw96/GoCommerceAPI/internal/features/wallets"
+	errs "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -31,7 +31,7 @@ func handleError(err error) (code int, errRes error) {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {
 		if pgErr.ConstraintName == "ck_wallets_balance" {
-			return errs.CodeFailedUser, fmt.Errorf("balance minimum is 0")
+			return errs.CodeFailedUser, errs.ErrBalanceLessThanZero
 		}
 		switch pgErr.Code {
 		case "23505": // UNIQUE violation
@@ -74,7 +74,7 @@ func (s *walletsService) DepositToWallet(arg wallets.UpdateWalletParams) (res *w
 		return nil, errs.CodeFailedUser, errs.ErrInvalidInput
 	}
 
-	res, err = s.repo.UpdateWallet(arg)
+	res, err = s.repo.UpdateWalletByUserID(arg)
 	if err != nil {
 		code, err = handleError(err)
 		return nil, code, err
@@ -89,7 +89,7 @@ func (s *walletsService) WithdrawFromWallet(arg wallets.UpdateWalletParams) (res
 		return nil, errs.CodeFailedUser, errs.ErrInvalidInput
 	}
 
-	res, err = s.repo.UpdateWallet(arg)
+	res, err = s.repo.UpdateWalletByUserID(arg)
 	if err != nil {
 		code, err = handleError(err)
 		return nil, code, err

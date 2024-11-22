@@ -3,9 +3,9 @@ package handler
 import (
 	"context"
 
-	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
-	mid "github.com/dwiw96/vocagame-technical-test-backend/pkg/middleware"
-	responses "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	product "github.com/dwiw96/GoCommerceAPI/internal/features/products"
+	mid "github.com/dwiw96/GoCommerceAPI/pkg/middleware"
+	responses "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 
 	"github.com/go-playground/locales/en"
 	ut "github.com/go-playground/universal-translator"

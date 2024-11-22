@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	config "github.com/dwiw96/vocagame-technical-test-backend/config"
+	config "github.com/dwiw96/GoCommerceAPI/config"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

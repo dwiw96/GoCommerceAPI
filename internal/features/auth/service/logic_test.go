@@ -4,19 +4,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"testing"
 
-	cfg "github.com/dwiw96/vocagame-technical-test-backend/config"
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
-	cache "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/cache"
-	repo "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/repository"
-	pg "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/postgresql"
-	rd "github.com/dwiw96/vocagame-technical-test-backend/pkg/driver/redis"
-	middleware "github.com/dwiw96/vocagame-technical-test-backend/pkg/middleware"
-	generator "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/generator"
+	cfg "github.com/dwiw96/GoCommerceAPI/config"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
+	cache "github.com/dwiw96/GoCommerceAPI/internal/features/auth/cache"
+	repo "github.com/dwiw96/GoCommerceAPI/internal/features/auth/repository"
+	rd "github.com/dwiw96/GoCommerceAPI/pkg/driver/redis"
+	middleware "github.com/dwiw96/GoCommerceAPI/pkg/middleware"
+	conv "github.com/dwiw96/GoCommerceAPI/pkg/utils/converter"
+	generator "github.com/dwiw96/GoCommerceAPI/pkg/utils/generator"
+	password "github.com/dwiw96/GoCommerceAPI/pkg/utils/password"
+	errs "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
+	testUtils "github.com/dwiw96/GoCommerceAPI/testutils"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,34 +35,42 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	os.Setenv("DB_USERNAME", "dwiw")
-	os.Setenv("DB_PASSWORD", "secret")
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_PORT", "5432")
-	os.Setenv("DB_NAME", "technical_test")
+	pool = testUtils.GetPool()
+	defer pool.Close()
+	ctx = testUtils.GetContext()
+	defer ctx.Done()
 
-	envConfig := &cfg.EnvConfig{
-		DB_USERNAME: os.Getenv("DB_USERNAME"),
-		DB_PASSWORD: os.Getenv("DB_PASSWORD"),
-		DB_HOST:     os.Getenv("DB_HOST"),
-		DB_PORT:     os.Getenv("DB_PORT"),
-		DB_NAME:     os.Getenv("DB_NAME"),
+	schemaCleanup := testUtils.SetupDB("test_service_auth")
+
+	password.JwtInit(pool, ctx)
+
+	os.Setenv("REDIS_HOST", "localhost:6379")
+	os.Setenv("REDIS_PASSWORD", "")
+	os.Setenv("REDIS_DB", "0")
+
+	redis_db, err := conv.ConvertStrToInt(os.Getenv("REDIS_DB"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	pool = pg.ConnectToPg(envConfig)
-	defer pool.Close()
+	env := &cfg.EnvConfig{
+		REDIS_HOST:     os.Getenv("REDIS_HOST"),
+		REDIS_PASSWORD: os.Getenv("REDIS_PASSWORD"),
+		REDIS_DB:       redis_db,
+	}
 
-	client := rd.ConnectToRedis(envConfig)
+	client := rd.ConnectToRedis(env)
 	defer client.Close()
-
-	ctx = context.Background()
-	defer ctx.Done()
 
 	repoTest = repo.NewAuthRepository(pool, pool)
 	cacheTest := cache.NewAuthCache(client, ctx)
 	serviceTest = NewAuthService(repoTest, cacheTest, ctx)
 
-	os.Exit(m.Run())
+	exitTest := m.Run()
+
+	schemaCleanup()
+
+	os.Exit(exitTest)
 }
 
 func createUser(t *testing.T) (user *auth.User, token string, signupReq auth.SignupRequest) {
@@ -82,7 +95,19 @@ func createUser(t *testing.T) (user *auth.User, token string, signupReq auth.Sig
 	return res, token, input
 }
 
+func insertRefreshTokenTest(t *testing.T, userID int32) uuid.UUID {
+	refreshToken, err := uuid.NewRandom()
+	require.NoError(t, err)
+	err = repoTest.InsertRefreshToken(ctx, userID, refreshToken)
+	require.NoError(t, err)
+
+	return refreshToken
+}
+
 func TestSignUp(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	email := generator.CreateRandomEmail(generator.CreateRandomString(5))
 	tests := []struct {
 		desc  string
@@ -98,28 +123,28 @@ func TestSignUp(t *testing.T) {
 			},
 			err: false,
 		}, {
-			desc: "failed__empty_username",
+			desc: "failed_empty_username",
 			input: auth.SignupRequest{
 				Email:    generator.CreateRandomEmail(generator.CreateRandomString(5)),
 				Password: generator.CreateRandomString(10),
 			},
 			err: true,
 		}, {
-			desc: "failed__empty_password",
+			desc: "failed_empty_password",
 			input: auth.SignupRequest{
 				Username: generator.CreateRandomEmail(generator.CreateRandomString(5)),
 				Email:    generator.CreateRandomEmail(generator.CreateRandomString(5)),
 			},
 			err: true,
 		}, {
-			desc: "failed__empty_email",
+			desc: "failed_empty_email",
 			input: auth.SignupRequest{
 				Username: generator.CreateRandomEmail(generator.CreateRandomString(5)),
 				Password: generator.CreateRandomString(10),
 			},
 			err: true,
 		}, {
-			desc: "failed__duplicate_email",
+			desc: "failed_duplicate_email",
 			input: auth.SignupRequest{
 				Username: generator.CreateRandomString(5),
 				Email:    email,
@@ -134,7 +159,6 @@ func TestSignUp(t *testing.T) {
 			res, token, code, err := serviceTest.SignUp(tC.input)
 
 			if !tC.err {
-				// t.Log("res id:", res.ID)
 				require.NoError(t, err)
 				require.Equal(t, 200, code)
 				assert.Equal(t, tC.input.Username, res.Username)
@@ -151,6 +175,9 @@ func TestSignUp(t *testing.T) {
 }
 
 func TestLogIn(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	user, _, signUpReq := createUser(t)
 
 	tests := []struct {
@@ -219,6 +246,9 @@ func TestLogIn(t *testing.T) {
 }
 
 func TestLogOut(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, _, signUpReq := createUser(t)
 
 	argLogin := auth.LoginRequest{
@@ -244,15 +274,20 @@ func TestLogOut(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	var users []auth.User
 	for i := 0; i < 5; i++ {
 		user, _, _ := createUser(t)
+		insertRefreshTokenTest(t, user.ID)
 		users = append(users, *user)
 	}
 
 	testCases := []struct {
 		desc string
 		arg  auth.DeleteUserParams
+		code int
 		err  bool
 	}{
 		{
@@ -261,46 +296,51 @@ func TestDeleteUser(t *testing.T) {
 				ID:    users[0].ID,
 				Email: users[0].Email,
 			},
-			err: false,
+			code: errs.CodeSuccess,
+			err:  false,
 		}, {
 			desc: "success",
 			arg: auth.DeleteUserParams{
 				ID:    users[1].ID,
 				Email: users[1].Email,
 			},
-			err: false,
+			code: errs.CodeSuccess,
+			err:  false,
 		}, {
 			desc: "success",
 			arg: auth.DeleteUserParams{
 				ID:    users[2].ID,
 				Email: users[2].Email,
 			},
-			err: false,
+			code: errs.CodeSuccess,
+			err:  false,
 		}, {
 			desc: "failed_wrong_id",
 			arg: auth.DeleteUserParams{
 				ID:    users[3].ID + 5,
 				Email: users[3].Email,
 			},
-			err: true,
+			code: errs.CodeFailedUser,
+			err:  true,
 		}, {
 			desc: "failed_wrong_email",
 			arg: auth.DeleteUserParams{
 				ID:    users[4].ID,
 				Email: "a" + users[4].Email,
 			},
-			err: true,
+
+			code: errs.CodeFailedUser,
+			err:  true,
 		},
 	}
 
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			code, err := serviceTest.DeleteUser(tC.arg)
+			assert.Equal(t, tC.code, code)
 			if !tC.err {
-				require.Equal(t, 200, code)
 				require.NoError(t, err)
 			} else {
-				require.NotEqual(t, 200, code)
 				require.Error(t, err)
 			}
 		})
@@ -308,6 +348,9 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
+	err := testUtils.DeleteSchemaTestData(pool)
+	require.NoError(t, err)
+
 	_, _, signUpReq := createUser(t)
 
 	argLogin := auth.LoginRequest{

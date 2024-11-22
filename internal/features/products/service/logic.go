@@ -6,9 +6,9 @@ import (
 	"math"
 	"strings"
 
-	product "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products"
-	converter "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/converter"
-	errorHandler "github.com/dwiw96/vocagame-technical-test-backend/pkg/utils/responses"
+	product "github.com/dwiw96/GoCommerceAPI/internal/features/products"
+	converter "github.com/dwiw96/GoCommerceAPI/pkg/utils/converter"
+	errorHandler "github.com/dwiw96/GoCommerceAPI/pkg/utils/responses"
 )
 
 type productService struct {

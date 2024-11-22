@@ -7,18 +7,22 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
-	authCache "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/cache"
-	authHandler "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/handler"
-	authRepository "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/repository"
-	authService "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth/service"
+	authCache "github.com/dwiw96/GoCommerceAPI/internal/features/auth/cache"
+	authHandler "github.com/dwiw96/GoCommerceAPI/internal/features/auth/handler"
+	authRepository "github.com/dwiw96/GoCommerceAPI/internal/features/auth/repository"
+	authService "github.com/dwiw96/GoCommerceAPI/internal/features/auth/service"
 
-	productsHandler "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/handler"
-	productsRepository "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/repository"
-	productsService "github.com/dwiw96/vocagame-technical-test-backend/internal/features/products/service"
+	productsHandler "github.com/dwiw96/GoCommerceAPI/internal/features/products/handler"
+	productsRepository "github.com/dwiw96/GoCommerceAPI/internal/features/products/repository"
+	productsService "github.com/dwiw96/GoCommerceAPI/internal/features/products/service"
 
-	walletsHandler "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/handler"
-	walletsRepository "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/repository"
-	walletsService "github.com/dwiw96/vocagame-technical-test-backend/internal/features/wallets/service"
+	walletsHandler "github.com/dwiw96/GoCommerceAPI/internal/features/wallets/handler"
+	walletsRepository "github.com/dwiw96/GoCommerceAPI/internal/features/wallets/repository"
+	walletsService "github.com/dwiw96/GoCommerceAPI/internal/features/wallets/service"
+
+	transactionsHandler "github.com/dwiw96/GoCommerceAPI/internal/features/transactions/handler"
+	transactionsRepository "github.com/dwiw96/GoCommerceAPI/internal/features/transactions/repository"
+	transactionsService "github.com/dwiw96/GoCommerceAPI/internal/features/transactions/service"
 )
 
 func InitFactory(router *gin.Engine, pool *pgxpool.Pool, rdClient *redis.Client, ctx context.Context) {
@@ -34,4 +38,8 @@ func InitFactory(router *gin.Engine, pool *pgxpool.Pool, rdClient *redis.Client,
 	iWalletsRep := walletsRepository.NewWalletsRepository(pool, ctx)
 	iWalletsService := walletsService.NewWalletsService(ctx, iWalletsRep)
 	walletsHandler.NewWalletsHandler(router, iWalletsService, pool, rdClient, ctx)
+
+	iTransactionsRep := transactionsRepository.NewTransactionsRepository(pool, pool, ctx)
+	iTransactionsService := transactionsService.NewTransactionsService(ctx, iTransactionsRep)
+	transactionsHandler.NewTransactionsHandler(router, iTransactionsService, pool, rdClient, ctx)
 }

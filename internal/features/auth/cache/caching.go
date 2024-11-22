@@ -7,7 +7,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	auth "github.com/dwiw96/vocagame-technical-test-backend/internal/features/auth"
+	auth "github.com/dwiw96/GoCommerceAPI/internal/features/auth"
 )
 
 type authCache struct {
@@ -25,10 +25,8 @@ func NewAuthCache(client *redis.Client, ctx context.Context) auth.ICache {
 func (c *authCache) CachingBlockedToken(payload auth.JwtPayload) error {
 	now := time.Now().UTC()
 	exp := time.Unix(payload.Exp, 0)
-	fmt.Println("now:", now)
-	fmt.Println("exp:", exp)
+
 	duration := time.Duration(exp.Sub(now).Nanoseconds())
-	fmt.Println("ttl duration:", duration)
 	if duration <= 0 {
 		return nil
 	}
